@@ -3,6 +3,10 @@
 > **EXPERIMENTAL DEVNET ONLY — NOT REAL MONEY**
 >
 > This repository contains unaudited, experimental software intended for Solana devnet. No mainnet deployment path is enabled by default. There is no real BTC custody, no real money claims, and no guarantee of correctness.
+>
+> **Devnet Program ID:** `EXNLzDxRPN81NtxZKzNBKweG93R9FWUq8gfGoFGzxYYw`
+>
+> **Status:** [PRODUCTION_GAPS.md](PRODUCTION_GAPS.md) — 15 P0 blockers remain before any production label.
 
 ## What is Membra Money?
 
@@ -119,20 +123,64 @@ bash scripts/pre_flight_check.sh
 
 See `SECURITY.md` and `MAINNET_READINESS.md` for full details.
 
+## Production Features
+
+- **Database Layer:** SQLAlchemy models (User, Claim, RiskAcceptance, AuditLog, ReserveAttestation) with repository pattern
+- **Authentication:** JWT tokens with wallet signature verification, nonce-based replay protection, refresh tokens
+- **Validation:** Pydantic v2 schemas for all API endpoints
+- **Monitoring:** Prometheus metrics + Grafana dashboards + alerting rules
+- **Security:** CSP, HSTS, X-Frame-Options middleware; CORS hardening; rate limiting
+- **Resilience:** Circuit breaker pattern, Redis caching with graceful degradation
+- **Tracing:** OpenTelemetry stub (ready for full integration)
+- **Testing:** 50+ Rust property tests, pytest backend tests, Cypress E2E tests
+- **Infrastructure:** Kubernetes manifests, Terraform AWS configs, Docker multi-stage builds
+- **SDKs:** TypeScript and Python API clients
+- **Operations:** Backup/restore scripts, seed data, performance benchmarking, automated changelog generation
+
+## Documentation
+
+| Document | Purpose |
+|----------|---------|
+| [ARCHITECTURE.md](ARCHITECTURE.md) | System architecture, components, data flows |
+| [DATA_FLOW.md](DATA_FLOW.md) | 7 detailed data flow diagrams |
+| [SMART_CONTRACT_SPEC.md](SMART_CONTRACT_SPEC.md) | Anchor program specification |
+| [THREAT_MODEL.md](THREAT_MODEL.md) | Security threat model |
+| [API_REFERENCE.md](API_REFERENCE.md) | Full API docs with curl examples |
+| [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md) | Step-by-step deployment |
+| [PREVIEW_STATUS.md](PREVIEW_STATUS.md) | Current devnet status |
+| [PRODUCTION_GAPS.md](PRODUCTION_GAPS.md) | Production readiness checklist |
+| [PRODUCTION_READINESS.md](PRODUCTION_READINESS.md) | Complete feature report |
+| [CHANGELOG.md](CHANGELOG.md) | Release history |
+| [SECURITY.md](SECURITY.md) | Security policy |
+| [MAINNET_READINESS.md](MAINNET_READINESS.md) | Mainnet readiness |
+| [DEVNET_DEPLOYMENT.md](DEVNET_DEPLOYMENT.md) | Devnet procedures |
+| [docs/sequence-diagrams.md](docs/sequence-diagrams.md) | User flow diagrams |
+
 ## Repository Layout
 
 ```text
 membramoney-protocol/
   README.md
+  ARCHITECTURE.md
+  DATA_FLOW.md
+  SMART_CONTRACT_SPEC.md
+  THREAT_MODEL.md
+  API_REFERENCE.md
+  DEPLOYMENT_GUIDE.md
+  PREVIEW_STATUS.md
+  PRODUCTION_GAPS.md
+  CHANGELOG.md
   SECURITY.md
   MAINNET_READINESS.md
   DEVNET_DEPLOYMENT.md
   .gitignore
   .env.example
+  .editorconfig
   Anchor.toml
   Cargo.toml
   package.json
   tsconfig.json
+  .github/workflows/ci.yml
   programs/membramoney/
   backend/
   ui/

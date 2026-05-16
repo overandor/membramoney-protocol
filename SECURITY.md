@@ -11,17 +11,28 @@
 - **Use a secrets manager.** For any non-local deployment, use AWS Secrets Manager, 1Password Secrets Automation, Doppler, or HashiCorp Vault.
 - **No hardcoded values.** No private keys, wallet seeds, GitHub tokens, or API keys are allowed in source code.
 
+## Current Security Posture (2026-05-15)
+
+| Layer | Status | Details |
+|-------|--------|---------|
+| Smart Contract | Devnet deployed | 24 Rust unit tests, 7 instructions, 502KB |
+| Backend | Hardened | Rate limiting, brute-force protection, input sanitization, structured logging |
+| Frontend | Hardened | Error boundaries, loading states, dismissible devnet banner |
+| Documentation | Complete | Threat model, architecture, data flows, API reference |
+| CI/CD | Configured | GitHub Actions with Rust, Python, Node, secret scanning |
+
 ## Claim-Link Threat Model
 
 Claim links are the primary user-facing attack surface:
 
-| Threat | Mitigation |
-|--------|------------|
-| Brute-force PIN guessing | Rate limiting (5 attempts per PIN per hour). PINs are hashed with salt + pepper. |
-| Link interception | Links are single-use and expire. HTTPS is mandatory. |
-| Replay attacks | Claim codes are consumed on first valid use and marked on-chain. |
-| Phishing | UI displays protocol name + devnet warning. No shortened URLs. |
-| Server compromise | Minimal data stored. No real custody keys. HMAC pepper is required to forge claims. |
+| Threat | Mitigation | Status |
+|--------|------------|--------|
+| Brute-force PIN guessing | Rate limiting (5 attempts per PIN per hour). PINs are hashed with salt + pepper. Token-bucket per IP (2 req/s). | ✅ Implemented |
+| Link interception | Links are single-use and expire. HTTPS is mandatory. | ✅ Implemented |
+| Replay attacks | Claim codes are consumed on first valid use and marked on-chain. Idempotency keys prevent duplicate creation. | ✅ Implemented |
+| Phishing | UI displays protocol name + devnet warning. Solana Explorer link for verification. | ✅ Implemented |
+| Server compromise | Minimal data stored. No real custody keys. HMAC pepper is required to forge claims. Input sanitization on all endpoints. | ✅ Implemented |
+| Injection attacks | Base58 wallet validation, UUID claim ID validation, alphanumeric PIN validation. | ✅ Implemented |
 
 ## Wallet Safety
 

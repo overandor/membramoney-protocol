@@ -1,0 +1,31 @@
+# Membra Money Protocol — Security Contact
+
+## Reporting Security Issues
+
+If you discover a security vulnerability in this project, please report it responsibly:
+
+1. **Do NOT** open a public GitHub issue
+2. Email: security@membra.money (placeholder — update before use)
+3. Include:
+   - Description of the vulnerability
+   - Steps to reproduce
+   - Potential impact assessment
+   - Suggested remediation (if any)
+
+## Response Timeline
+
+- Acknowledgment: Within 48 hours
+- Initial assessment: Within 7 days
+- Fix and disclosure: Within 90 days (coordinated disclosure)
+
+## Current Status
+
+- **Classification:** DEVNET / RESEARCH PREVIEW ONLY
+- **Audit Status:** Unaudited — no external security review
+- **Production Ready:** No — 15 P0 blockers remain
+
+## Security Resources
+
+- [SECURITY.md](SECURITY.md) — Security policy and threat model
+- [THREAT_MODEL.md](THREAT_MODEL.md) — Detailed threat analysis
+- [PRODUCTION_GAPS.md](PRODUCTION_GAPS.md) — Production readiness checklist
