@@ -1,0 +1,23 @@
+# Global fallback
+docs/  @overandor
+README.md  @overandor
+
+# Smart contract
+programs/  @overandor
+
+# Backend
+backend/  @overandor
+
+# Frontend
+ui/  @overandor
+
+# Infrastructure
+.github/  @overandor
+docker-compose*.yml  @overandor
+Dockerfile  @overandor
+nginx.conf  @overandor
+
+# Security
+curity/  @overandor
+SECURITY.md  @overandor
+THREAT_MODEL.md  @overandor
