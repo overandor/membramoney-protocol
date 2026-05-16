@@ -1,0 +1,60 @@
+version: "3.9"
+
+# Production-like orchestration with placeholder environment variables.
+# Copy .env.example to .env and fill real values before use.
+
+services:
+  db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    command: redis-server --requirepass ${REDIS_PASSWORD}
+    ports:
+      - "6379:6379"
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - REDIS_URL=${REDIS_URL}
+      - ENV=${ENV}
+      - DEBUG=false
+      - BACKEND_PORT=8000
+      - BACKEND_URL=${BACKEND_URL}
+      - JWT_SECRET=${JWT_SECRET}
+      - HMAC_PEPPER=${HMAC_PEPPER}
+      - CLAIM_SALT=${CLAIM_SALT}
+      - RISK_DISCLOSURE_VERSION=${RISK_DISCLOSURE_VERSION}
+      - SOLANA_RPC_URL=${SOLANA_RPC_URL}
+      - ANCHOR_PROGRAM_ID=${ANCHOR_PROGRAM_ID}
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  pgdata:

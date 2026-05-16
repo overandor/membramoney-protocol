@@ -1,0 +1,86 @@
+# ------------------------------------------------------------------
+# Membra Money Protocol — .gitignore
+# ------------------------------------------------------------------
+
+# Secrets / environment
+.env
+.env.*.local
+*.key
+*.pem
+*.p12
+*.keystore
+secrets/
+credentials/
+
+# OS
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# IDEs
+.vscode/
+.idea/
+*.iml
+
+# Node / TypeScript
+node_modules/
+dist/
+build/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.vite/
+
+# Rust / Anchor
+target/
+Cargo.lock
+*.rs.bk
+.anchor/
+anchor-target/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.venv/
+venv/
+env/
+ENV/
+*.egg-info/
+.eggs/
+*.egg
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+htmlcov/
+.coverage
+.coverage.*
+
+# Docker
+*.dockerignore
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+
+# Logs / data
+logs/
+*.log
+*.jsonl
+data/
+tmp/
+temp/
+
+# Test artifacts
+snapshots/
+test-ledger/
+
+# Misc
+*.tar.gz
+*.zip

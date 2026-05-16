@@ -1,0 +1,54 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: membra
+      POSTGRES_PASSWORD: membra
+      POSTGRES_DB: membramoney
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U membra -d membramoney"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://membra:membra@db:5432/membramoney
+      - REDIS_URL=redis://redis:6379/0
+      - ENV=devnet
+      - DEBUG=true
+      - BACKEND_PORT=8000
+      - BACKEND_URL=http://localhost:8000
+      - JWT_SECRET=dev-jwt-secret-change-in-prod
+      - HMAC_PEPPER=dev-pepper-change-in-prod
+      - CLAIM_SALT=dev-claim-salt-change-in-prod
+      - RISK_DISCLOSURE_VERSION=v1.0.0-devnet
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  pgdata:

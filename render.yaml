@@ -1,0 +1,46 @@
+services:
+  - type: web
+    name: membramoney-backend
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    rootDir: backend
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: membramoney-db
+          property: connectionString
+      - key: ENV
+        value: devnet
+      - key: DEBUG
+        value: false
+      - key: BACKEND_PORT
+        value: 8000
+      - key: JWT_SECRET
+        generateValue: true
+      - key: HMAC_PEPPER
+        generateValue: true
+      - key: CLAIM_SALT
+        generateValue: true
+      - key: RISK_DISCLOSURE_VERSION
+        value: v1.0.0-devnet
+      - key: SOLANA_RPC_URL
+        value: https://api.devnet.solana.com
+      - key: ANCHOR_PROGRAM_ID
+        value: 11111111111111111111111111111111
+    healthCheckPath: /health
+
+  - type: web
+    name: membramoney-ui
+    runtime: static
+    rootDir: ui
+    buildCommand: npm install && npm run build
+    staticPublishPath: dist
+    envVars:
+      - key: VITE_API_BASE_URL
+        value: https://membramoney-backend.onrender.com
+
+databases:
+  - name: membramoney-db
+    databaseName: membramoney
+    user: membramoney
+    plan: starter
