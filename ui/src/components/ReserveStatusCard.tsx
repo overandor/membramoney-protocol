@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { api, ReserveResponse } from "../lib/api";
+import LoadingCard from "./LoadingCard";
 
 const ReserveStatusCard: React.FC = () => {
   const [data, setData] = useState<ReserveResponse | null>(null);
@@ -53,7 +54,7 @@ const ReserveStatusCard: React.FC = () => {
           </div>
         </div>
       ) : (
-        <div className="skeleton" style={{ height: 120 }} />
+        <LoadingCard lines={3} />
       )}
     </div>
   );

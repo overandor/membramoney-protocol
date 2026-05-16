@@ -50,5 +50,49 @@ services:
       timeout: 10s
       retries: 3
 
+  ui:
+    build:
+      context: ./ui
+      dockerfile: Dockerfile
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_API_BASE_URL=http://localhost:8000
+      - VITE_SOLANA_NETWORK=devnet
+      - VITE_ANCHOR_PROGRAM_ID=EXNLzDxRPN81NtxZKzNBKweG93R9FWUq8gfGoFGzxYYw
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5173"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  solana-validator:
+    image: solanalabs/solana:v1.17.0
+    ports:
+      - "8899:8899"
+      - "8900:8900"
+    command: >
+      solana-test-validator
+      --bind-address 0.0.0.0
+      --rpc-port 8899
+      --faucet-port 8900
+      --ledger /ledger
+      --reset
+    volumes:
+      - solana-ledger:/ledger
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8899/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+networks:
+  default:
+    name: membramoney-network
+
 volumes:
   pgdata:
+  solana-ledger:

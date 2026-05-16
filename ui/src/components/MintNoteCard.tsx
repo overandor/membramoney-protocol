@@ -1,5 +1,5 @@
-import React, { useMemo, useState } from "react";
-import { api, DeliveryChannel, PaymentAsset } from "../lib/api";
+import React, { useState } from "react";
+import { api } from "../lib/api";
 
 interface Props {
   walletAddress: string | null;
@@ -7,26 +7,14 @@ interface Props {
   onMint?: () => void;
 }
 
-const assetLabels: Record<PaymentAsset, string> = {
-  SOLANA_DEVNET_USDC: "Solana Devnet USDC",
-  SOLANA_DEVNET_SOL: "Solana Devnet SOL",
-  BTC_LIGHTNING: "BTC Lightning (disabled unless configured)",
-};
-
 const MintNoteCard: React.FC<Props> = ({ walletAddress, riskAccepted, onMint }) => {
-  const [usdCents, setUsdCents] = useState<number>(1);
+  const [denomination, setDenomination] = useState<number>(1000);
   const [expiryMinutes, setExpiryMinutes] = useState<number>(60);
-  const [asset, setAsset] = useState<PaymentAsset>("SOLANA_DEVNET_USDC");
-  const [deliveryChannel, setDeliveryChannel] = useState<DeliveryChannel>("qr");
   const [recipient, setRecipient] = useState("");
-  const [claimUrl, setClaimUrl] = useState("");
-  const [qrPayload, setQrPayload] = useState("");
   const [status, setStatus] = useState<{ type: "success" | "error" | "info"; msg: string } | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const usdLabel = useMemo(() => `$${(usdCents / 100).toFixed(2)}`, [usdCents]);
-
-  const handleCreate = async () => {
+  const handleMint = async () => {
     if (!walletAddress) {
       setStatus({ type: "error", msg: "Connect a wallet first." });
       return;
@@ -35,77 +23,38 @@ const MintNoteCard: React.FC<Props> = ({ walletAddress, riskAccepted, onMint }) 
       setStatus({ type: "error", msg: "Accept the risk disclosure first." });
       return;
     }
-    if (usdCents < 1) {
-      setStatus({ type: "error", msg: "Minimum micropayment is $0.01." });
-      return;
-    }
     setLoading(true);
     setStatus(null);
-    setClaimUrl("");
-    setQrPayload("");
     try {
-      const res = await api.createMicropayment({
-        sender_wallet: walletAddress,
-        usd_cents: usdCents,
-        asset,
-        delivery_channel: deliveryChannel,
-        recipient_hint: recipient || undefined,
+      const res = await api.createClaim({
+        wallet_address: walletAddress,
+        denomination_sats: denomination,
         expires_minutes: expiryMinutes,
         risk_version: "v1.0.0-devnet",
       });
-      setClaimUrl(res.claim_url);
-      setQrPayload(res.qr_payload);
       setStatus({
-        type: res.backend_degraded ? "info" : "success",
-        msg: `${usdLabel} claim link created. Status: ${res.status}; funding: ${res.funding_status}.`,
+        type: "success",
+        msg: `Claim created: ${res.claim_id}. PIN is hidden for security.`,
       });
       onMint?.();
     } catch (e: any) {
-      setStatus({ type: "error", msg: e.message || "Micropayment creation failed." });
+      setStatus({ type: "error", msg: e.message || "Mint failed." });
     } finally {
       setLoading(false);
     }
   };
 
-  const copyClaim = async () => {
-    if (!claimUrl) return;
-    await navigator.clipboard.writeText(claimUrl);
-    setStatus({ type: "success", msg: "Claim link copied. Deliver it only to the intended recipient." });
-  };
-
   return (
     <div className="panel">
-      <h2 className="card-title">Create Micropayment</h2>
-      <p className="muted">
-        Minimum $0.01. This creates a one-time claim secret and QR/link payload; it does not send private keys or claim confirmed funding.
-      </p>
+      <h2 className="card-title">Mint Devnet Note</h2>
       <div className="form-group">
-        <label>Amount (USD cents)</label>
+        <label>Denomination (sats)</label>
         <input
           type="number"
-          value={usdCents}
-          onChange={(e) => setUsdCents(Number(e.target.value))}
+          value={denomination}
+          onChange={(e) => setDenomination(Number(e.target.value))}
           min={1}
         />
-        <small className="muted">Current amount: {usdLabel}</small>
-      </div>
-      <div className="form-group">
-        <label>Asset Rail</label>
-        <select value={asset} onChange={(e) => setAsset(e.target.value as PaymentAsset)}>
-          {Object.entries(assetLabels).map(([value, label]) => (
-            <option key={value} value={value}>{label}</option>
-          ))}
-        </select>
-      </div>
-      <div className="form-group">
-        <label>Delivery Mode</label>
-        <select value={deliveryChannel} onChange={(e) => setDeliveryChannel(e.target.value as DeliveryChannel)}>
-          <option value="qr">QR payload</option>
-          <option value="link">Direct link</option>
-          <option value="physical">Printable physical voucher</option>
-          <option value="email">Email degraded mode</option>
-          <option value="sms">SMS degraded mode</option>
-        </select>
       </div>
       <div className="form-group">
         <label>Expiry (minutes)</label>
@@ -113,39 +62,22 @@ const MintNoteCard: React.FC<Props> = ({ walletAddress, riskAccepted, onMint }) 
           type="number"
           value={expiryMinutes}
           onChange={(e) => setExpiryMinutes(Number(e.target.value))}
-          min={1}
+          min={5}
         />
       </div>
       <div className="form-group">
-        <label>Recipient hint (optional)</label>
+        <label>Recipient Wallet (optional)</label>
         <input
           type="text"
           value={recipient}
           onChange={(e) => setRecipient(e.target.value)}
-          placeholder="Email, phone, wallet, or voucher label"
+          placeholder="Leave blank to mint to self"
         />
       </div>
-      <button onClick={handleCreate} disabled={loading}>
+      <button onClick={handleMint} disabled={loading}>
         {loading && <span className="spinner" />}
-        {loading ? "Creating..." : "Create $0.01+ Claim Link"}
+        {loading ? "Minting..." : "Mint Devnet Note"}
       </button>
-      {claimUrl && (
-        <div className="status info animate-in">
-          <span className="status-icon">ℹ</span>
-          <div>
-            <strong>Claim URL</strong>
-            <p className="wallet-address">{claimUrl}</p>
-            <button type="button" onClick={copyClaim}>Copy claim link</button>
-            <p className="muted">QR payload matches the claim URL. Escrow redemption remains blocked until funding is confirmed.</p>
-          </div>
-        </div>
-      )}
-      {qrPayload && (
-        <div className="risk-box">
-          <strong>Printable / QR Payload</strong>
-          <p className="wallet-address">{qrPayload}</p>
-        </div>
-      )}
       {status && (
         <div className={`status ${status.type} animate-in`}>
           <span className="status-icon">

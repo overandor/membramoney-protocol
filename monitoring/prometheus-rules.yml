@@ -1,0 +1,48 @@
+groups:
+  - name: membramoney
+    interval: 30s
+    rules:
+      - alert: HighErrorRate
+        expr: rate(http_requests_total{status=~"5.."}[5m]) > 0.05
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High error rate detected"
+          description: "Error rate is above 5% for 5 minutes"
+
+      - alert: HighLatency
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High latency detected"
+          description: "95th percentile latency > 1s"
+
+      - alert: ServiceDown
+        expr: up == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Service is down"
+          description: "Service has been down for more than 1 minute"
+
+      - alert: DatabaseConnectionsHigh
+        expr: process_open_fds > 1000
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High database connections"
+          description: "Database connections are above 1000"
+
+      - alert: CircuitBreakerOpen
+        expr: circuit_breaker_state == 2
+        for: 0m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Circuit breaker is open"
+          description: "External service may be unavailable"

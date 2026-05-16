@@ -1,0 +1,9 @@
+# robots.txt for Membra Money Protocol
+# Disallow all crawlers from indexing devnet-only content
+
+User-agent: *
+Disallow: /
+
+# Allow health checks and public docs
+Allow: /health
+Allow: /ready

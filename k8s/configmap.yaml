@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: membramoney-config
+  namespace: membramoney
+data:
+  ENV: "production"
+  BACKEND_URL: "https://api.membramoney.dev"
+  RISK_DISCLOSURE_VERSION: "v1.0.0"
+  LOG_LEVEL: "info"
+  STRUCTLOG: "true"

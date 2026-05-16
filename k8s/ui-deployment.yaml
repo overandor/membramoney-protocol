@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: membramoney-ui
+  namespace: membramoney
+  labels:
+    app: ui
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: ui
+  template:
+    metadata:
+      labels:
+        app: ui
+    spec:
+      containers:
+        - name: ui
+          image: membramoney/ui:latest
+          ports:
+            - containerPort: 80
+              name: http
+          env:
+            - name: VITE_API_BASE_URL
+              value: "https://api.membramoney.dev"
+            - name: VITE_SOLANA_NETWORK
+              value: "devnet"
+            - name: VITE_ANCHOR_PROGRAM_ID
+              value: "EXNLzDxRPN81NtxZKzNBKweG93R9FWUq8gfGoFGzxYYw"
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "100m"
+            limits:
+              memory: "128Mi"
+              cpu: "200m"
