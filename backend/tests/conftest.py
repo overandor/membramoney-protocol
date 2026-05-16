@@ -10,6 +10,14 @@ import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from main import app
+from db.adapter import db
+
+
+@pytest.fixture(autouse=True)
+def reset_db():
+    """Reset in-memory stores before each test to ensure isolation."""
+    db.reset()
+    yield
 
 
 @pytest.fixture

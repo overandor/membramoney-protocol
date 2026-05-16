@@ -34,7 +34,7 @@ def test_histogram_observe():
     m.observe("latency", 0.2)
     data = m.to_dict()["histograms"]["latency"]
     assert data["count"] == 2
-    assert data["sum"] == 0.3
+    assert round(data["sum"], 3) == 0.3
 
 
 def test_timer_context():

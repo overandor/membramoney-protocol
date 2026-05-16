@@ -7,7 +7,7 @@ import sys
 import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from main import _claims, _risk_acceptances, _idempotency_keys
+from db.adapter import db
 
 
 def test_health_endpoint(client):
@@ -164,7 +164,8 @@ def test_invalid_wallet_rejected(client):
             "accepted_version": "v1.0.0-devnet",
         },
     )
-    assert response.status_code == 400
+    # Pydantic min_length validation returns 422; our sanitization returns 400
+    assert response.status_code in (400, 422)
 
 
 def test_rate_limiting(client):

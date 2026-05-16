@@ -100,6 +100,14 @@ class InMemoryStore:
             }
         return self._users[wallet]
 
+    def reset(self):
+        """Clear all in-memory stores. Used for test isolation."""
+        self._claims.clear()
+        self._risk_acceptances.clear()
+        self._audit_events.clear()
+        self._idempotency_keys.clear()
+        self._users.clear()
+
 
 class DBAdapter:
     """Unified adapter that routes to SQLAlchemy or in-memory."""
@@ -225,6 +233,10 @@ class DBAdapter:
 
     def active_claim_count(self) -> int:
         return self.claim_count() - self.redeemed_claim_count()
+
+    def reset(self):
+        """Reset in-memory stores. Used for test isolation."""
+        self._memory.reset()
 
 
 # Global singleton

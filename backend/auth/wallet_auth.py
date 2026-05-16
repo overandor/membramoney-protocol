@@ -12,12 +12,16 @@ class WalletAuthService:
     def __init__(self):
         self.jwt = JWTManager()
         self.nonce_ttl = 300  # 5 minutes
+        self._memory_nonces: dict = {}
 
     def generate_nonce(self, wallet_address: str) -> str:
         """Generate a one-time nonce for wallet signature."""
         nonce = secrets.token_hex(16)
         key = f"nonce:{wallet_address}"
-        redis_client.set(key, nonce, ttl=self.nonce_ttl)
+        if redis_client.set(key, nonce, ttl=self.nonce_ttl):
+            return nonce
+        # Fallback: in-memory store for dev/test environments
+        self._memory_nonces[key] = nonce
         return nonce
 
     def verify_nonce(self, wallet_address: str, nonce: str) -> bool:
@@ -26,6 +30,11 @@ class WalletAuthService:
         stored = redis_client.get(key)
         if stored and stored == nonce:
             redis_client.delete(key)
+            return True
+        # Fallback: check in-memory store
+        stored = self._memory_nonces.get(key)
+        if stored and stored == nonce:
+            del self._memory_nonces[key]
             return True
         return False
 
