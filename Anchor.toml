@@ -3,10 +3,10 @@ seeds = false
 skip-lint = false
 
 [programs.localnet]
-membramoney = "11111111111111111111111111111111"
+membramoney = "EXNLzDxRPN81NtxZKzNBKweG93R9FWUq8gfGoFGzxYYw"
 
 [programs.devnet]
-membramoney = "11111111111111111111111111111111"
+membramoney = "EXNLzDxRPN81NtxZKzNBKweG93R9FWUq8gfGoFGzxYYw"
 
 [registry]
 url = "https://api.apr.dev"

@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 
 // Replace with your deployed program ID after `anchor deploy`
-declare_id!("11111111111111111111111111111111");
+declare_id!("EXNLzDxRPN81NtxZKzNBKweG93R9FWUq8gfGoFGzxYYw");
 
 /// Maximum note expiry: 90 days (in seconds)
 const MAX_EXPIRY_SECONDS: i64 = 90 * 24 * 60 * 60;
