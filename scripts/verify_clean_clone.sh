@@ -30,7 +30,7 @@ fi
 
 # 2. Backend imports smoke test
 echo "[2/6] Backend imports smoke test..."
-if cd backend && python3 -c "
+if (cd backend && python3 -c "
 import sys
 sys.path.insert(0, '.')
 try:
@@ -41,7 +41,7 @@ try:
 except Exception as e:
     print(f'imports FAIL: {e}')
     sys.exit(1)
-" 2>&1 | grep -q "imports OK"; then
+" 2>&1 | grep -q "imports OK"); then
   ok "Backend imports"
 else
   ko "Backend imports (install deps with: pip install -r backend/requirements.txt)"
@@ -50,7 +50,7 @@ fi
 # 3. Rust syntax check
 echo "[3/6] Rust program syntax check..."
 if [ -f "programs/membramoney/src/lib.rs" ]; then
-  if cd programs/membramoney && cargo check --lib 2>/dev/null; then
+  if (cd programs/membramoney && cargo check --lib 2>/dev/null); then
     ok "Rust library check"
   else
     warn "Rust cargo check failed (may need Solana tooling)"
@@ -62,7 +62,7 @@ fi
 # 4. UI build check
 echo "[4/6] UI build check..."
 if [ -f "ui/package.json" ]; then
-  if cd ui && npm install >/dev/null 2>&1 && npm run build >/dev/null 2>&1; then
+  if (cd ui && npm install >/dev/null 2>&1 && npm run build >/dev/null 2>&1); then
     ok "UI npm run build"
   else
     ko "UI npm run build (install Node.js deps)"
