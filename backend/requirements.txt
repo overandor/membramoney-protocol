@@ -16,7 +16,7 @@ bcrypt==4.1.0
 pyjwt==2.8.0
 
 # Redis (optional, for brute-force tracking)
-redis==5.0.0
+redis==7.4.0
 
 # Observability
 psutil==5.9.8
