@@ -25,28 +25,29 @@ const WalletPanel: React.FC<Props> = ({ walletAddress, onConnect, onDisconnect }
   };
 
   return (
-    <div>
+    <div className="animate-in">
       <h2 className="card-title">Wallet</h2>
       {walletAddress ? (
-        <div>
-          <p style={{ wordBreak: "break-all", color: "var(--text)" }}>
-            <strong>Address:</strong> {walletAddress}
-          </p>
-          <p style={{ color: "var(--text-muted)", fontSize: "0.85rem" }}>
-            Network: devnet
-          </p>
-          <button onClick={handleDisconnect} style={{ marginTop: 8 }}>
-            Disconnect
-          </button>
+        <div className="wallet-info">
+          <div>
+            <span className="wallet-label">Address</span>
+            <div className="wallet-address">{walletAddress}</div>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <span className="wallet-badge devnet">devnet</span>
+            <button className="btn-secondary" onClick={handleDisconnect}>
+              Disconnect
+            </button>
+          </div>
         </div>
       ) : (
-        <div>
-          <p style={{ color: "var(--text-muted)" }}>No wallet connected.</p>
-          <button onClick={handleConnect} style={{ marginTop: 8 }}>
-            Connect Wallet
-          </button>
-          <p style={{ color: "var(--text-muted)", fontSize: "0.75rem", marginTop: 6 }}>
-            Devnet placeholder: paste a test address or leave blank.
+        <div className="wallet-info">
+          <p style={{ color: "var(--text-muted)", marginBottom: 4 }}>
+            No wallet connected.
+          </p>
+          <button onClick={handleConnect}>Connect Wallet</button>
+          <p style={{ color: "var(--text-muted)", fontSize: "0.75rem" }}>
+            Devnet placeholder — paste a test address or leave blank.
           </p>
         </div>
       )}

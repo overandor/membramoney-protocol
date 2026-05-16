@@ -66,9 +66,17 @@ const ClaimNoteCard: React.FC<Props> = ({ walletAddress, riskAccepted }) => {
         />
       </div>
       <button onClick={handleValidate} disabled={loading}>
+        {loading && <span className="spinner" />}
         {loading ? "Validating..." : "Validate Claim"}
       </button>
-      {status && <div className={`status ${status.type}`}>{status.msg}</div>}
+      {status && (
+        <div className={`status ${status.type} animate-in`}>
+          <span className="status-icon">
+            {status.type === "success" ? "✓" : status.type === "error" ? "✕" : "ℹ"}
+          </span>
+          {status.msg}
+        </div>
+      )}
     </div>
   );
 };

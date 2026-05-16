@@ -75,9 +75,17 @@ const MintNoteCard: React.FC<Props> = ({ walletAddress, riskAccepted, onMint }) 
         />
       </div>
       <button onClick={handleMint} disabled={loading}>
+        {loading && <span className="spinner" />}
         {loading ? "Minting..." : "Mint Devnet Note"}
       </button>
-      {status && <div className={`status ${status.type}`}>{status.msg}</div>}
+      {status && (
+        <div className={`status ${status.type} animate-in`}>
+          <span className="status-icon">
+            {status.type === "success" ? "✓" : status.type === "error" ? "✕" : "ℹ"}
+          </span>
+          {status.msg}
+        </div>
+      )}
     </div>
   );
 };
