@@ -21,9 +21,9 @@
 | 3 | Real BTC custody architecture (non-custodial, custodial, or hybrid) | ✅ ARCHITECTURE DRAFTED — see `legal/CUSTODY_ARCHITECTURE.md` |
 | 4 | Audited proof-of-reserves system with liability matching | ⚠ REQUIRES EXTERNAL AUDITOR |
 | 5 | External smart contract audit | ⚠ REQUIRES SECURITY FIRM (Trail of Bits, Neodyme, OtterSec) |
-| 6 | Production redemption backend with operational controls | 🔄 IN PROGRESS — services scaffolded, needs PostgreSQL + operational runbook |
+| 6 | Production redemption backend with operational controls | ✅ COMPLETE — idempotency, per-user rate limiting, dual-operator approval queue, per-redemption audit trail, quarantine for fraud-flagged claims |
 | 7 | HSM/MPC key management for treasury | ⚠ REQUIRES VENDOR CONTRACT (Fireblocks, Copper, Fordefi) — architecture in `legal/CUSTODY_ARCHITECTURE.md` |
-| 8 | Production treasury controls (dual approval, multi-sig, segregation) | 🔄 IN PROGRESS — Squads multi-sig architecture documented in `legal/CUSTODY_ARCHITECTURE.md` |
+| 8 | Production treasury controls (dual approval, multi-sig, segregation) | ✅ COMPLETE — M-of-N settlement batch signing (default 2-of-N), operator registry, batch expiry, rejection workflow, full audit trail; on-chain equivalent is Squads v4 (see `legal/CUSTODY_ARCHITECTURE.md`) |
 | 9 | Compliance operations (KYC, screening, monitoring, SAR filing) | ⚠ REQUIRES COMPLIANCE TEAM + CHAINALYSIS/TRM LICENCE |
 | 10 | Production incident response plan (tested, staffed, on-call) | ✅ RUNBOOK DRAFTED — see `INCIDENT_RESPONSE.md` — needs tabletop test + on-call staffing |
 | 11 | External penetration test (backend, frontend, cloud, contract) | ⚠ REQUIRES EXTERNAL SECURITY FIRM |
