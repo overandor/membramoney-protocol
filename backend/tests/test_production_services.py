@@ -75,3 +75,26 @@ def test_redemption_fraud():
     fraud = r.fraud_check("alice", 1000000, 0)
     assert fraud["score"] < 50
     assert not fraud["blocked"]
+from services.compliance_service import ComplianceService
+from services.security_service import SecurityService
+
+def test_compliance_screen():
+    c = ComplianceService()
+    s = c.screen_user("user1", "onboarding")
+    assert s["result"] == "clear"
+
+def test_compliance_risk():
+    c = ComplianceService()
+    r = c.calculate_risk_score("user1", {"high_velocity": True})
+    assert r["score"] > 0
+
+def test_security_anomaly():
+    s = SecurityService()
+    a = s.check_anomaly("user1", 500, "us", "fp1")
+    assert a["score"] < 50
+
+def test_security_velocity():
+    s = SecurityService()
+    s.record_transaction("user1", 100, "ip1", "fp1")
+    v = s.check_velocity("user1", "ip1")
+    assert v["count_1h"] == 1
