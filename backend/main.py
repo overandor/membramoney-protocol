@@ -568,7 +568,7 @@ _ledger.create_account("fee_pool_btc", "fee", "btc")
 @app.post("/api/v1/identity/register")
 async def identity_register(username: str, wallet_address: str):
     user = _identity.register(username, wallet_address)
-    _ledger.create_account(f"user_{user[user_id]}", "user", "btc", user["user_id"])
+    _ledger.create_account(f"user_{user['user_id']}", "user", "btc", user["user_id"])
     return user
 
 @app.get("/api/v1/identity/resolve/{identifier}")
@@ -655,6 +655,69 @@ async def security_check(user_id: str, amount: int, ip_hash: str, device_fingerp
     velocity = _security.check_velocity(user_id, ip_hash)
     anomaly = _security.check_anomaly(user_id, amount, ip_hash, device_fingerprint)
     return {"velocity": velocity, "anomaly": anomaly}
+
+# Fee savings + sponsor endpoints
+from services.fee_sponsor_service import FeeSponsorService as _FeeSponsorSvc
+
+_fee_sponsor = _FeeSponsorSvc(
+    enabled=os.getenv("FEE_SPONSORING_ENABLED", "false").lower() == "true",
+    sponsor_wallet=os.getenv("FEE_SPONSOR_WALLET", ""),
+)
+
+@app.get("/api/v1/fees/savings")
+async def fee_savings(amount_sats: int = 100_000):
+    """Show BTC network fee savings when using Membra bearer notes on Solana."""
+    btc_low = 15_000
+    btc_med = 50_000
+    btc_high = 200_000
+    sol_fee_sats = 25  # ~5000 lamports at typical SOL price
+    user_pays = 0 if _fee_sponsor.enabled else sol_fee_sats
+    return {
+        "amount_transferred_sats": amount_sats,
+        "btc_network_fees": {
+            "low_congestion_sats": btc_low,
+            "medium_congestion_sats": btc_med,
+            "high_congestion_sats": btc_high,
+        },
+        "membra_fee_sats": sol_fee_sats,
+        "fee_sponsored": _fee_sponsor.enabled,
+        "user_pays_sats": user_pays,
+        "savings_vs_btc": {
+            "low_congestion_pct": round((1 - user_pays / btc_low) * 100, 1),
+            "medium_congestion_pct": round((1 - user_pays / btc_med) * 100, 1),
+            "high_congestion_pct": round((1 - user_pays / btc_high) * 100, 1),
+        },
+        "settlement_time": {
+            "btc_confirmations": "10–60 minutes",
+            "membra_solana": "~400ms",
+        },
+        "btc_tps": 7,
+        "solana_tps": 65_000,
+        "innovation": {
+            "cross_chain_value": "BTC-denominated value transferred on Solana without a bridge",
+            "no_wallet_needed": "Recipients claim via PIN/link — no wallet required to receive",
+            "programmable_expiry": "Notes expire automatically; no stuck funds",
+            "split_merge": "Split one note into change or merge many into one",
+        },
+        "disclaimer": "Fee estimates are illustrative. SOL and BTC prices fluctuate.",
+        "devnet": settings.env == "devnet",
+    }
+
+@app.get("/api/v1/sponsor/status")
+async def sponsor_status():
+    """Check whether fee sponsoring (gasless transfers) is active."""
+    stats = _fee_sponsor.get_stats()
+    return {
+        "fee_sponsoring_enabled": _fee_sponsor.enabled,
+        "user_pays_fees": not _fee_sponsor.enabled,
+        "solana_fee_per_tx_lamports": 5_000,
+        "explanation": (
+            "Fee sponsoring means the protocol pays the Solana transaction fee (~$0.00025) "
+            "on behalf of the user, making bearer-note transfers completely free."
+        ),
+        "stats": stats,
+        "devnet": settings.env == "devnet",
+    }
 
 # Production metrics endpoint
 from metrics_service import MetricsService

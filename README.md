@@ -8,15 +8,55 @@
 >
 > **Status:** [PRODUCTION_GAPS.md](PRODUCTION_GAPS.md) — 15 P0 blockers remain before any production label.
 
+## The Innovation
+
+Membra solves a problem no other protocol handles the same way:
+
+**BTC-denominated value transferred at Solana speed with near-zero (or zero) fees — without a bridge.**
+
+| | BTC On-Chain | Lightning | Membra Bearer Notes |
+|--|--|--|--|
+| Fee (low mempool) | ~15,000 sats | ~1 sat | ~25 sats (or 0 if sponsored) |
+| Fee (congested) | ~200,000 sats | ~1 sat | ~25 sats (or 0 if sponsored) |
+| Settlement time | 10–60 min | Seconds (route-dependent) | ~400 ms |
+| Receiver needs wallet | Yes | Yes | **No — PIN/link only** |
+| Programmable expiry | No | No | **Yes** |
+| Split into change | No | Partial | **Yes — atomic split/merge** |
+| TPS capacity | 7 | ~1,000 | **65,000+** |
+
+**What makes Membra unique:**
+
+1. **Cross-chain value without a bridge** — BTC-denominated bearer notes live on Solana. No bridge, no wrapped token, no custodian lock-up needed to represent BTC value.
+2. **No-wallet claiming** — Recipients claim by entering a PIN from a URL link. They do not need a Solana wallet to receive value.
+3. **Fee-sponsored transfers (gasless)** — When `FEE_SPONSORING_ENABLED=true`, the protocol pays the ~$0.00025 Solana transaction fee on behalf of the user. Transfers are completely free for end users.
+4. **Programmable bearer semantics** — Notes carry expiry, redemption policy (Immediate/Delayed/Batched), compliance state, and asset type in a single on-chain account.
+5. **Atomic split and merge** — One 100,000-sat note can be split into 70,000 + 30,000; two notes can be merged. No UTXO management required.
+6. **Audit trail on-chain** — Every state transition (mint → transfer → claim → redeem → burn) is verifiable on Solana without trusting the backend.
+
 ## What is Membra Money?
 
 Membra Money is an experimental devnet-first Solana protocol for Bitcoin-denominated bearer-note style claims. It allows:
 
 - **Minting** devnet notes denominated in satoshis.
-- **Transferring** notes between wallets.
-- **Claiming** notes via PIN/code entry.
+- **Transferring** notes between wallets — at Solana speed (~400ms), near-zero cost.
+- **Claiming** notes via PIN/code entry — no wallet required to receive.
 - **Redeeming** notes back to the issuer.
 - **Auditing** note state and reserve attestations on-chain.
+
+### Free Transfers Explained
+
+"Free transfers" in Membra means two things:
+
+**1. Free BTC-layer fees** — Moving BTC-denominated value as a bearer note on Solana never touches the Bitcoin chain. There are no BTC miner fees, no mempool auctions, no UTXO management.
+
+**2. Free Solana fees (optional, fee sponsoring)** — The protocol can optionally sponsor the tiny Solana transaction fee (~0.000005 SOL ≈ $0.00025). When `FEE_SPONSORING_ENABLED=true`, the backend pays all network fees and the user pays nothing. Enable this in `.env`:
+
+```env
+FEE_SPONSORING_ENABLED=true
+FEE_SPONSOR_WALLET=<your-funded-solana-pubkey>
+```
+
+Check fee savings live: `GET /api/v1/fees/savings` and `GET /api/v1/sponsor/status`.
 
 The protocol is intentionally simple to minimize attack surface. It does **not** implement real BTC bridges, real custody, or real money settlement. All values are simulated on devnet.
 

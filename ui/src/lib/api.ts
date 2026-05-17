@@ -111,6 +111,40 @@ export interface AuditEventsResponse {
   count: number;
 }
 
+export interface FeeSavingsResponse {
+  amount_transferred_sats: number;
+  btc_network_fees: {
+    low_congestion_sats: number;
+    medium_congestion_sats: number;
+    high_congestion_sats: number;
+  };
+  membra_fee_sats: number;
+  fee_sponsored: boolean;
+  user_pays_sats: number;
+  savings_vs_btc: {
+    low_congestion_pct: number;
+    medium_congestion_pct: number;
+    high_congestion_pct: number;
+  };
+  settlement_time: {
+    btc_confirmations: string;
+    membra_solana: string;
+  };
+  btc_tps: number;
+  solana_tps: number;
+  innovation: Record<string, string>;
+  disclaimer: string;
+  devnet: boolean;
+}
+
+export interface SponsorStatusResponse {
+  fee_sponsoring_enabled: boolean;
+  user_pays_fees: boolean;
+  solana_fee_per_tx_lamports: number;
+  explanation: string;
+  devnet: boolean;
+}
+
 export const api = {
   health: () => fetchJson<HealthResponse>("/health"),
   ready: () => fetchJson<HealthResponse>("/ready"),
@@ -134,4 +168,7 @@ export const api = {
   getStats: () => fetchJson<StatsResponse>("/api/v1/stats"),
   getAuditEvents: (limit?: number) =>
     fetchJson<AuditEventsResponse>(`/api/v1/audit/events?limit=${limit || 100}`),
+  getFeeSavings: (amountSats?: number) =>
+    fetchJson<FeeSavingsResponse>(`/api/v1/fees/savings?amount_sats=${amountSats || 100000}`),
+  getSponsorStatus: () => fetchJson<SponsorStatusResponse>("/api/v1/sponsor/status"),
 };

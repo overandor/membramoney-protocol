@@ -43,8 +43,9 @@ pub mod membramoney {
         );
 
         let state = &mut ctx.accounts.protocol_state;
-        state.note_counter = state.note_counter.checked_add(1).unwrap();
+        // note_id matches PDA seed (pre-increment counter), then counter advances
         let note_id = state.note_counter;
+        state.note_counter = state.note_counter.checked_add(1).unwrap();
 
         let note = &mut ctx.accounts.note;
         note.note_id = note_id;
@@ -137,6 +138,10 @@ pub mod membramoney {
     /// Burn a note (permanently destroy it after settlement consumed it).
     pub fn burn_note(ctx: Context<BurnNote>) -> Result<()> {
         require!(!ctx.accounts.protocol_state.paused, ErrorCode::ProtocolPaused);
+        require!(
+            ctx.accounts.protocol_state.authority == ctx.accounts.authority.key(),
+            ErrorCode::Unauthorized
+        );
         let note = &mut ctx.accounts.note;
         require!(
             note.state == NoteState::Redeemed,
