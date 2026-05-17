@@ -62,7 +62,7 @@ fi
 # 4. UI build check
 echo "[4/6] UI build check..."
 if [ -f "ui/package.json" ]; then
-  if (cd ui && npm install >/dev/null 2>&1 && npm run build >/dev/null 2>&1); then
+  if (cd ui && npm install --legacy-peer-deps >/dev/null 2>&1 && npm run build >/dev/null 2>&1); then
     ok "UI npm run build"
   else
     ko "UI npm run build (install Node.js deps)"
