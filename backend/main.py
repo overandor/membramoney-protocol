@@ -544,3 +544,92 @@ async def generic_exception_handler(request: Request, exc: Exception):
             },
         },
     )
+
+# Production services
+from services.identity_service import IdentityService
+from services.claimnote_service import ClaimNoteService
+from services.ledger_service import LedgerService
+from services.treasury_service import TreasuryService
+from services.settlement_engine import SettlementEngine
+from services.redemption_service import RedemptionService
+
+_identity = IdentityService()
+_claimnotes = ClaimNoteService()
+_ledger = LedgerService()
+_treasury = TreasuryService()
+_settlement = SettlementEngine()
+_redemption = RedemptionService(_claimnotes, _ledger, _settlement, _treasury)
+
+_ledger.create_account("reserve_btc", "reserve", "btc")
+_ledger.create_account("settlement_btc", "settlement", "btc")
+_ledger.create_account("fee_pool_btc", "fee", "btc")
+
+# Identity endpoints
+@app.post("/api/v1/identity/register")
+async def identity_register(username: str, wallet_address: str):
+    user = _identity.register(username, wallet_address)
+    _ledger.create_account(f"user_{user[user_id]}", "user", "btc", user["user_id"])
+    return user
+
+@app.get("/api/v1/identity/resolve/{identifier}")
+async def identity_resolve(identifier: str):
+    return _identity.resolve(identifier)
+
+@app.post("/api/v1/identity/rotate-tag")
+async def identity_rotate_tag(username: str):
+    return {"new_tag": _identity.rotate_tag(username)}
+
+# Claim-note endpoints
+@app.post("/api/v1/claims")
+async def claim_create(issuer_id: str, asset_type: str, denomination: int, owner: str, bearer_condition: str, expiry_minutes: int = 60):
+    return _claimnotes.create_claim(issuer_id, asset_type, denomination, owner, bearer_condition, expiry_minutes)
+
+@app.get("/api/v1/claims/{claim_id}")
+async def claim_get(claim_id: str):
+    claim = _claimnotes.get_claim(claim_id)
+    if not claim:
+        raise HTTPException(status_code=404, detail="Claim not found")
+    return claim
+
+@app.post("/api/v1/claims/{claim_id}/transfer")
+async def claim_transfer(claim_id: str, from_user: str, to_user: str):
+    return _claimnotes.transfer_claim(claim_id, from_user, to_user)
+
+@app.post("/api/v1/claims/{claim_id}/split")
+async def claim_split(claim_id: str, amounts: list):
+    return _claimnotes.split_claim(claim_id, amounts)
+
+@app.post("/api/v1/claims/{claim_id}/redeem")
+async def claim_redeem(claim_id: str, user_id: str, pin: str, destination: str, chain: str):
+    return _redemption.redeem(claim_id, user_id, pin, destination, chain, str(uuid.uuid4()))
+
+# Ledger endpoints
+@app.get("/api/v1/ledger/balance/{account_id}")
+async def ledger_balance(account_id: str):
+    return {"account_id": account_id, "balance": _ledger.get_balance(account_id)}
+
+@app.get("/api/v1/ledger/history/{account_id}")
+async def ledger_history(account_id: str, limit: int = 100):
+    return {"entries": _ledger.get_history(account_id, limit)}
+
+# Settlement endpoints
+@app.get("/api/v1/settlement/quote")
+async def settlement_quote(amount: int, chain: str):
+    return {"fee": _settlement._estimate_fee(amount, chain)}
+
+@app.get("/api/v1/settlement/status/{batch_id}")
+async def settlement_status(batch_id: str):
+    batch = _settlement._batches.get(batch_id)
+    if not batch:
+        raise HTTPException(status_code=404, detail="Batch not found")
+    return batch
+
+# Treasury endpoints
+@app.get("/api/v1/treasury/reserves")
+async def treasury_reserves():
+    return {
+        "btc": _treasury.get_reserve_total("btc"),
+        "sol": _treasury.get_reserve_total("sol"),
+        "eth": _treasury.get_reserve_total("eth"),
+        "usdc": _treasury.get_reserve_total("usdc"),
+    }
