@@ -313,6 +313,49 @@ pub mod membramoney {
 
         Ok(())
     }
+
+    // MEMBRA token instructions
+    pub fn initialize_membra_mint(
+        ctx: Context<InitializeMembraMint>,
+        supply_cap: u64,
+        emission_schedule_bps: u16,
+    ) -> Result<()> {
+        let mint = &mut ctx.accounts.membra_mint;
+        mint.authority = ctx.accounts.authority.key();
+        mint.supply_cap = supply_cap;
+        mint.current_supply = 0;
+        mint.emission_schedule_bps = emission_schedule_bps;
+        mint.rebase_index = 10_000;
+        mint.bump = ctx.bumps.membra_mint;
+        Ok(())
+    }
+
+    pub fn mint_membra(
+        ctx: Context<MintMembra>,
+        amount: u64,
+        recipient: Pubkey,
+    ) -> Result<()> {
+        let mint = &mut ctx.accounts.membra_mint;
+        require!(
+            mint.current_supply.checked_add(amount).unwrap() <= mint.supply_cap,
+            ErrorCode::SupplyCapExceeded
+        );
+        mint.current_supply = mint.current_supply.checked_add(amount).unwrap();
+        Ok(())
+    }
+
+    pub fn update_rebase_index(
+        ctx: Context<UpdateRebaseIndex>,
+        new_index: u32,
+    ) -> Result<()> {
+        let mint = &mut ctx.accounts.membra_mint;
+        require!(
+            mint.authority == ctx.accounts.authority.key(),
+            ErrorCode::Unauthorized
+        );
+        mint.rebase_index = new_index;
+        Ok(())
+    }
 }
 
 // ------------------------------------------------------------------
@@ -476,6 +519,40 @@ pub struct ReimburseRelayer<'info> {
     pub relayer: AccountInfo<'info>,
 }
 
+// MEMBRA token account contexts
+#[derive(Accounts)]
+pub struct InitializeMembraMint<'info> {
+    #[account(
+        init,
+        payer = authority,
+        space = 8 + MembraMint::SIZE,
+        seeds = [b"membra_mint"],
+        bump
+    )]
+    pub membra_mint: Account<'info, MembraMint>,
+    #[account(mut)]
+    pub authority: Signer<'info>,
+    pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
+pub struct MintMembra<'info> {
+    #[account(seeds = [b"protocol_state"], bump = protocol_state.bump)]
+    pub protocol_state: Account<'info, ProtocolState>,
+    #[account(mut, seeds = [b"membra_mint"], bump = membra_mint.bump)]
+    pub membra_mint: Account<'info, MembraMint>,
+    pub authority: Signer<'info>,
+}
+
+#[derive(Accounts)]
+pub struct UpdateRebaseIndex<'info> {
+    #[account(seeds = [b"protocol_state"], bump = protocol_state.bump)]
+    pub protocol_state: Account<'info, ProtocolState>,
+    #[account(mut, seeds = [b"membra_mint"], bump = membra_mint.bump)]
+    pub membra_mint: Account<'info, MembraMint>,
+    pub authority: Signer<'info>,
+}
+
 // ------------------------------------------------------------------
 // Existing account contexts
 // ------------------------------------------------------------------
@@ -582,6 +659,20 @@ pub struct GasVault {
 
 impl GasVault {
     pub const SIZE: usize = 32 + 8 + 8 + 8 + 8 + 1; // ~65 bytes
+}
+
+#[account]
+pub struct MembraMint {
+    pub authority: Pubkey,
+    pub supply_cap: u64,
+    pub current_supply: u64,
+    pub emission_schedule_bps: u16,
+    pub rebase_index: u32,
+    pub bump: u8,
+}
+
+impl MembraMint {
+    pub const SIZE: usize = 32 + 8 + 8 + 2 + 4 + 1; // ~55 bytes
 }
 
 #[account]
