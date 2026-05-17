@@ -19,7 +19,7 @@ pyjwt==2.8.0
 redis==7.4.0
 
 # Observability
-psutil==5.9.8
+psutil==7.2.2
 
 # Dev / Test
 pytest==8.2.0
