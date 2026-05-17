@@ -2,7 +2,9 @@
 
 **Current Status:** DEVNET / RESEARCH PREVIEW ONLY
 **Program ID:** `EXNLzDxRPN81NtxZKzNBKweG93R9FWUq8gfGoFGzxYYw` (devnet)
-**Last Updated:** 2026-05-15
+**Last Updated:** 2026-05-17
+
+**Legend:** ✅ Code complete | 🔄 In progress | ⚠ Requires human/external action
 
 ## Classification
 
@@ -14,21 +16,21 @@
 
 | # | Item | Status |
 |---|------|--------|
-| 1 | Legal classification memo (MSB, stored value, prepaid access, securities) | NOT STARTED |
-| 2 | AML/sanctions compliance program | NOT STARTED |
-| 3 | Real BTC custody architecture (non-custodial, custodial, or hybrid) | NOT STARTED |
-| 4 | Audited proof-of-reserves system with liability matching | NOT STARTED |
-| 5 | External smart contract audit | NOT STARTED |
-| 6 | Production redemption backend with operational controls | NOT STARTED |
-| 7 | HSM/MPC key management for treasury | NOT STARTED |
-| 8 | Production treasury controls (dual approval, multi-sig, segregation) | NOT STARTED |
-| 9 | Compliance operations (KYC, screening, monitoring, SAR filing) | NOT STARTED |
-| 10 | Production incident response plan (tested, staffed, on-call) | NOT STARTED |
-| 11 | External penetration test (backend, frontend, cloud, contract) | NOT STARTED |
-| 12 | Mainnet go-live approval (legal, compliance, security, board) | NOT STARTED |
-| 13 | Terms of Service, Privacy Policy, Risk Disclosure, Custody Agreement | NOT STARTED |
-| 14 | Sanctions screening integration (OFAC, chainalysis) | NOT STARTED |
-| 15 | Real wallet adapter integration (Phantom, Solflare, Backpack) | NOT STARTED |
+| 1 | Legal classification memo (MSB, stored value, prepaid access, securities) | ⚠ REQUIRES LEGAL COUNSEL |
+| 2 | AML/sanctions compliance program | ⚠ REQUIRES COMPLIANCE OFFICER |
+| 3 | Real BTC custody architecture (non-custodial, custodial, or hybrid) | ✅ ARCHITECTURE DRAFTED — see `legal/CUSTODY_ARCHITECTURE.md` |
+| 4 | Audited proof-of-reserves system with liability matching | ⚠ REQUIRES EXTERNAL AUDITOR |
+| 5 | External smart contract audit | ⚠ REQUIRES SECURITY FIRM (Trail of Bits, Neodyme, OtterSec) |
+| 6 | Production redemption backend with operational controls | 🔄 IN PROGRESS — services scaffolded, needs PostgreSQL + operational runbook |
+| 7 | HSM/MPC key management for treasury | ⚠ REQUIRES VENDOR CONTRACT (Fireblocks, Copper, Fordefi) — architecture in `legal/CUSTODY_ARCHITECTURE.md` |
+| 8 | Production treasury controls (dual approval, multi-sig, segregation) | 🔄 IN PROGRESS — Squads multi-sig architecture documented in `legal/CUSTODY_ARCHITECTURE.md` |
+| 9 | Compliance operations (KYC, screening, monitoring, SAR filing) | ⚠ REQUIRES COMPLIANCE TEAM + CHAINALYSIS/TRM LICENCE |
+| 10 | Production incident response plan (tested, staffed, on-call) | ✅ RUNBOOK DRAFTED — see `INCIDENT_RESPONSE.md` — needs tabletop test + on-call staffing |
+| 11 | External penetration test (backend, frontend, cloud, contract) | ⚠ REQUIRES EXTERNAL SECURITY FIRM |
+| 12 | Mainnet go-live approval (legal, compliance, security, board) | ⚠ REQUIRES BOARD/REGULATORY SIGN-OFF |
+| 13 | Terms of Service, Privacy Policy, Risk Disclosure, Custody Agreement | ✅ TEMPLATES DRAFTED — see `legal/` — all require legal review before publication |
+| 14 | Sanctions screening integration (OFAC, chainalysis) | ⚠ REQUIRES VENDOR CONTRACT + COMPLIANCE OPERATIONS |
+| 15 | Real wallet adapter integration (Phantom, Solflare) | ✅ COMPLETE — `@solana/wallet-adapter-react` integrated, WalletMultiButton live |
 
 ## Completed Devnet Items
 
