@@ -633,3 +633,25 @@ async def treasury_reserves():
         "eth": _treasury.get_reserve_total("eth"),
         "usdc": _treasury.get_reserve_total("usdc"),
     }
+
+# Compliance + Security endpoints
+from services.compliance_service import ComplianceService
+from services.security_service import SecurityService
+
+_compliance = ComplianceService()
+_security = SecurityService()
+
+@app.post("/api/v1/compliance/screen")
+async def compliance_screen(user_id: str, screening_type: str):
+    return _compliance.screen_user(user_id, screening_type)
+
+@app.get("/api/v1/compliance/quarantine")
+async def compliance_quarantine():
+    return {"quarantine": _compliance.get_quarantine()}
+
+@app.post("/api/v1/security/check")
+async def security_check(user_id: str, amount: int, ip_hash: str, device_fingerprint: str):
+    _security.record_transaction(user_id, amount, ip_hash, device_fingerprint)
+    velocity = _security.check_velocity(user_id, ip_hash)
+    anomaly = _security.check_anomaly(user_id, amount, ip_hash, device_fingerprint)
+    return {"velocity": velocity, "anomaly": anomaly}
