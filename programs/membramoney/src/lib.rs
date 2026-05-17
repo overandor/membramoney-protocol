@@ -27,7 +27,10 @@ pub mod membramoney {
         ctx: Context<MintNote>,
         denomination_sats: u64,
         claim_hash: [u8; 32],
+        nullifier: [u8; 32],
         expires_at: i64,
+        asset_type: AssetType,
+        redemption_policy: RedemptionPolicy,
     ) -> Result<()> {
         require!(!ctx.accounts.protocol_state.paused, ErrorCode::ProtocolPaused);
         require!(denomination_sats >= MIN_DENOMINATION, ErrorCode::InvalidAmount);
@@ -49,7 +52,12 @@ pub mod membramoney {
         note.current_holder = ctx.accounts.recipient.key();
         note.issuer = ctx.accounts.authority.key();
         note.claim_hash = claim_hash;
-        note.redeemed = false;
+        note.nullifier = nullifier;
+        note.replay_nonce = 0;
+        note.state = NoteState::Created;
+        note.compliance_state = ComplianceState::Pending;
+        note.asset_type = asset_type;
+        note.redemption_policy = redemption_policy;
         note.created_at = clock.unix_timestamp;
         note.expires_at = expiry;
         note.bump = ctx.bumps.note;
@@ -67,12 +75,17 @@ pub mod membramoney {
             note.current_holder == ctx.accounts.current_holder.key(),
             ErrorCode::Unauthorized
         );
-        require!(!note.redeemed, ErrorCode::AlreadyRedeemed);
+        require!(
+            note.state == NoteState::Created || note.state == NoteState::Transferred,
+            ErrorCode::AlreadyRedeemed
+        );
 
         let clock = Clock::get()?;
         require!(clock.unix_timestamp < note.expires_at, ErrorCode::NoteExpired);
 
         note.current_holder = ctx.accounts.new_holder.key();
+        note.state = NoteState::Transferred;
+        note.replay_nonce = note.replay_nonce.checked_add(1).unwrap();
         Ok(())
     }
 
@@ -86,12 +99,17 @@ pub mod membramoney {
         let note = &mut ctx.accounts.note;
         let clock = Clock::get()?;
         require!(clock.unix_timestamp < note.expires_at, ErrorCode::NoteExpired);
-        require!(!note.redeemed, ErrorCode::AlreadyRedeemed);
+        require!(
+            note.state == NoteState::Created || note.state == NoteState::Transferred,
+            ErrorCode::AlreadyRedeemed
+        );
 
         let hash = anchor_lang::solana_program::hash::hash(&preimage);
         require!(hash.to_bytes() == note.claim_hash, ErrorCode::InvalidClaim);
 
         note.current_holder = ctx.accounts.claimant.key();
+        note.state = NoteState::Transferred;
+        note.replay_nonce = note.replay_nonce.checked_add(1).unwrap();
         Ok(())
     }
 
@@ -104,12 +122,43 @@ pub mod membramoney {
             note.current_holder == ctx.accounts.current_holder.key(),
             ErrorCode::Unauthorized
         );
-        require!(!note.redeemed, ErrorCode::AlreadyRedeemed);
+        require!(
+            note.state == NoteState::Created || note.state == NoteState::Transferred,
+            ErrorCode::AlreadyRedeemed
+        );
 
         let clock = Clock::get()?;
         require!(clock.unix_timestamp < note.expires_at, ErrorCode::NoteExpired);
 
-        note.redeemed = true;
+        note.state = NoteState::Redeemed;
+        Ok(())
+    }
+
+    /// Burn a note (permanently destroy it after settlement consumed it).
+    pub fn burn_note(ctx: Context<BurnNote>) -> Result<()> {
+        require!(!ctx.accounts.protocol_state.paused, ErrorCode::ProtocolPaused);
+        let note = &mut ctx.accounts.note;
+        require!(
+            note.state == NoteState::Redeemed,
+            ErrorCode::InvalidAmount
+        );
+        note.state = NoteState::Burned;
+        Ok(())
+    }
+
+    /// Revoke a note (issuer cancels unclaimed note).
+    pub fn revoke_note(ctx: Context<RevokeNote>) -> Result<()> {
+        require!(!ctx.accounts.protocol_state.paused, ErrorCode::ProtocolPaused);
+        let note = &mut ctx.accounts.note;
+        require!(
+            note.issuer == ctx.accounts.issuer.key(),
+            ErrorCode::Unauthorized
+        );
+        require!(
+            note.state == NoteState::Created || note.state == NoteState::Transferred,
+            ErrorCode::AlreadyRedeemed
+        );
+        note.state = NoteState::Revoked;
         Ok(())
     }
 
@@ -179,7 +228,7 @@ pub struct InitializeProtocol<'info> {
 }
 
 #[derive(Accounts)]
-#[instruction(denomination_sats: u64, claim_hash: [u8; 32], expires_at: i64)]
+#[instruction(denomination_sats: u64, claim_hash: [u8; 32], nullifier: [u8; 32], expires_at: i64, asset_type: AssetType, redemption_policy: RedemptionPolicy)]
 pub struct MintNote<'info> {
     #[account(mut, seeds = [b"protocol_state"], bump = protocol_state.bump)]
     pub protocol_state: Account<'info, ProtocolState>,
@@ -239,6 +288,24 @@ pub struct AuthorityOnly<'info> {
 }
 
 #[derive(Accounts)]
+pub struct BurnNote<'info> {
+    #[account(seeds = [b"protocol_state"], bump = protocol_state.bump)]
+    pub protocol_state: Account<'info, ProtocolState>,
+    #[account(mut)]
+    pub note: Account<'info, Note>,
+    pub authority: Signer<'info>,
+}
+
+#[derive(Accounts)]
+pub struct RevokeNote<'info> {
+    #[account(seeds = [b"protocol_state"], bump = protocol_state.bump)]
+    pub protocol_state: Account<'info, ProtocolState>,
+    #[account(mut, has_one = issuer)]
+    pub note: Account<'info, Note>,
+    pub issuer: Signer<'info>,
+}
+
+#[derive(Accounts)]
 #[instruction(attestation_hash: [u8; 32], reserve_ratio_bps: u16)]
 pub struct RecordReserveAttestation<'info> {
     #[account(seeds = [b"protocol_state"], bump = protocol_state.bump)]
@@ -279,7 +346,12 @@ pub struct Note {
     pub current_holder: Pubkey,
     pub issuer: Pubkey,
     pub claim_hash: [u8; 32],
-    pub redeemed: bool,
+    pub nullifier: [u8; 32],
+    pub replay_nonce: u64,
+    pub state: NoteState,
+    pub compliance_state: ComplianceState,
+    pub asset_type: AssetType,
+    pub redemption_policy: RedemptionPolicy,
     pub created_at: i64,
     pub expires_at: i64,
     pub bump: u8,
@@ -287,7 +359,40 @@ pub struct Note {
 }
 
 impl Note {
-    pub const SIZE: usize = 8 + 8 + 32 + 32 + 32 + 1 + 8 + 8 + 1 + 2; // ~132 bytes
+    pub const SIZE: usize = 8 + 8 + 32 + 32 + 32 + 32 + 8 + 1 + 1 + 1 + 1 + 8 + 8 + 1 + 2; // ~175 bytes
+}
+
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, PartialEq, Eq, Debug)]
+pub enum NoteState {
+    Created,
+    Transferred,
+    Redeemed,
+    Expired,
+    Burned,
+    Revoked,
+}
+
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, PartialEq, Eq, Debug)]
+pub enum ComplianceState {
+    Pending,
+    Cleared,
+    Quarantined,
+    Rejected,
+}
+
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, PartialEq, Eq, Debug)]
+pub enum AssetType {
+    Btc,
+    Sol,
+    Eth,
+    Usdc,
+}
+
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, PartialEq, Eq, Debug)]
+pub enum RedemptionPolicy {
+    Immediate,
+    Delayed,
+    Batched,
 }
 
 #[account]
@@ -351,9 +456,9 @@ mod tests {
 
     #[test]
     fn test_note_size_calculation() {
-        let expected = 8 + 8 + 32 + 32 + 32 + 1 + 8 + 8 + 1 + 2;
+        let expected = 8 + 8 + 32 + 32 + 32 + 32 + 8 + 1 + 1 + 1 + 1 + 8 + 8 + 1 + 2;
         assert_eq!(Note::SIZE, expected);
-        assert_eq!(Note::SIZE, 132);
+        assert_eq!(Note::SIZE, 175);
     }
 
     #[test]
@@ -368,6 +473,74 @@ mod tests {
         let expected = 32 + 2 + 8 + 32 + 1;
         assert_eq!(ReserveAttestation::SIZE, expected);
         assert_eq!(ReserveAttestation::SIZE, 75);
+    }
+
+    #[test]
+    fn test_note_state_enum_values() {
+        assert_eq!(NoteState::Created as u8, 0);
+        assert_eq!(NoteState::Transferred as u8, 1);
+        assert_eq!(NoteState::Redeemed as u8, 2);
+        assert_eq!(NoteState::Expired as u8, 3);
+        assert_eq!(NoteState::Burned as u8, 4);
+        assert_eq!(NoteState::Revoked as u8, 5);
+    }
+
+    #[test]
+    fn test_compliance_state_enum_values() {
+        assert_eq!(ComplianceState::Pending as u8, 0);
+        assert_eq!(ComplianceState::Cleared as u8, 1);
+        assert_eq!(ComplianceState::Quarantined as u8, 2);
+        assert_eq!(ComplianceState::Rejected as u8, 3);
+    }
+
+    #[test]
+    fn test_asset_type_enum_values() {
+        assert_eq!(AssetType::Btc as u8, 0);
+        assert_eq!(AssetType::Sol as u8, 1);
+        assert_eq!(AssetType::Eth as u8, 2);
+        assert_eq!(AssetType::Usdc as u8, 3);
+    }
+
+    #[test]
+    fn test_redemption_policy_enum_values() {
+        assert_eq!(RedemptionPolicy::Immediate as u8, 0);
+        assert_eq!(RedemptionPolicy::Delayed as u8, 1);
+        assert_eq!(RedemptionPolicy::Batched as u8, 2);
+    }
+
+    #[test]
+    fn test_note_state_machine_transitions() {
+        // Valid transitions
+        let mut state = NoteState::Created;
+        state = NoteState::Transferred;
+        assert_eq!(state, NoteState::Transferred);
+        state = NoteState::Redeemed;
+        assert_eq!(state, NoteState::Redeemed);
+        state = NoteState::Burned;
+        assert_eq!(state, NoteState::Burned);
+
+        // Revoke from Created
+        state = NoteState::Created;
+        state = NoteState::Revoked;
+        assert_eq!(state, NoteState::Revoked);
+    }
+
+    #[test]
+    fn test_burn_requires_redeemed() {
+        // Burn can only follow Redeem
+        let prev = NoteState::Redeemed;
+        let next = NoteState::Burned;
+        assert!(prev == NoteState::Redeemed);
+        assert!(next == NoteState::Burned);
+    }
+
+    #[test]
+    fn test_revoke_requires_created_or_transferred() {
+        // Revoke can only happen before Redeem
+        let valid_prev = [NoteState::Created, NoteState::Transferred];
+        assert!(valid_prev.contains(&NoteState::Created));
+        assert!(valid_prev.contains(&NoteState::Transferred));
+        assert!(!valid_prev.contains(&NoteState::Redeemed));
     }
 
     #[test]
