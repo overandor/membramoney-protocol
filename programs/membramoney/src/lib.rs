@@ -710,6 +710,8 @@ pub enum ErrorCode {
     ReserveTooLow,
     #[msg("GasVault has insufficient lamports")]
     GasVaultInsufficient,
+    #[msg("MEMBRA supply cap exceeded")]
+    SupplyCapExceeded,
 }
 
 // ------------------------------------------------------------------
