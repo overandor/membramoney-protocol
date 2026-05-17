@@ -211,6 +211,108 @@ pub mod membramoney {
 
         Ok(())
     }
+
+    // ------------------------------------------------------------------
+    // GasVault instructions
+    // ------------------------------------------------------------------
+
+    /// Initialize the GasVault account.
+    pub fn initialize_gasvault(ctx: Context<InitializeGasVault>) -> Result<()> {
+        let vault = &mut ctx.accounts.gasvault;
+        vault.authority = ctx.accounts.authority.key();
+        vault.total_deposited_lamports = 0;
+        vault.total_credits_issued = 0;
+        vault.total_credits_spent = 0;
+        vault.total_reimbursed = 0;
+        vault.bump = ctx.bumps.gasvault;
+        Ok(())
+    }
+
+    /// Deposit SOL into the GasVault (authority only).
+    pub fn deposit_to_gasvault(ctx: Context<DepositToGasVault>, amount_lamports: u64) -> Result<()> {
+        require!(!ctx.accounts.protocol_state.paused, ErrorCode::ProtocolPaused);
+        require!(
+            ctx.accounts.gasvault.authority == ctx.accounts.authority.key(),
+            ErrorCode::Unauthorized
+        );
+        require!(amount_lamports > 0, ErrorCode::InvalidAmount);
+
+        let vault = &mut ctx.accounts.gasvault;
+        vault.total_deposited_lamports = vault.total_deposited_lamports.checked_add(amount_lamports).unwrap();
+
+        // Transfer SOL from authority to vault PDA
+        anchor_lang::system_program::transfer(
+            CpiContext::new(
+                ctx.accounts.system_program.to_account_info(),
+                anchor_lang::system_program::Transfer {
+                    from: ctx.accounts.authority.to_account_info(),
+                    to: ctx.accounts.gasvault.to_account_info(),
+                },
+            ),
+            amount_lamports,
+        )?;
+
+        Ok(())
+    }
+
+    /// Issue fee credits to a user (authority only). Does NOT create SOL.
+    pub fn issue_fee_credits(
+        ctx: Context<IssueFeeCredits>,
+        user: Pubkey,
+        amount_lamports: u64,
+    ) -> Result<()> {
+        require!(!ctx.accounts.protocol_state.paused, ErrorCode::ProtocolPaused);
+        require!(
+            ctx.accounts.gasvault.authority == ctx.accounts.authority.key(),
+            ErrorCode::Unauthorized
+        );
+        require!(amount_lamports > 0, ErrorCode::InvalidAmount);
+
+        let vault = &mut ctx.accounts.gasvault;
+        vault.total_credits_issued = vault.total_credits_issued.checked_add(amount_lamports).unwrap();
+
+        Ok(())
+    }
+
+    /// Record fee credits spent by a user (relayer confirms).
+    pub fn spend_fee_credits(
+        ctx: Context<SpendFeeCredits>,
+        _user: Pubkey,
+        amount_lamports: u64,
+    ) -> Result<()> {
+        require!(!ctx.accounts.protocol_state.paused, ErrorCode::ProtocolPaused);
+        require!(amount_lamports > 0, ErrorCode::InvalidAmount);
+
+        let vault = &mut ctx.accounts.gasvault;
+        vault.total_credits_spent = vault.total_credits_spent.checked_add(amount_lamports).unwrap();
+
+        Ok(())
+    }
+
+    /// Reimburse a relayer from the GasVault (authority only).
+    pub fn reimburse_relayer(
+        ctx: Context<ReimburseRelayer>,
+        amount_lamports: u64,
+    ) -> Result<()> {
+        require!(!ctx.accounts.protocol_state.paused, ErrorCode::ProtocolPaused);
+        require!(
+            ctx.accounts.gasvault.authority == ctx.accounts.authority.key(),
+            ErrorCode::Unauthorized
+        );
+        require!(amount_lamports > 0, ErrorCode::InvalidAmount);
+
+        let vault_balance = ctx.accounts.gasvault.to_account_info().lamports();
+        require!(vault_balance >= amount_lamports, ErrorCode::GasVaultInsufficient);
+
+        let vault = &mut ctx.accounts.gasvault;
+        vault.total_reimbursed = vault.total_reimbursed.checked_add(amount_lamports).unwrap();
+
+        // Transfer lamports from vault PDA to relayer
+        **ctx.accounts.gasvault.to_account_info().try_borrow_mut_lamports()? -= amount_lamports;
+        **ctx.accounts.relayer.to_account_info().try_borrow_mut_lamports()? += amount_lamports;
+
+        Ok(())
+    }
 }
 
 // ------------------------------------------------------------------
@@ -310,6 +412,74 @@ pub struct RevokeNote<'info> {
     pub issuer: Signer<'info>,
 }
 
+// ------------------------------------------------------------------
+// GasVault account contexts
+// ------------------------------------------------------------------
+
+#[derive(Accounts)]
+pub struct InitializeGasVault<'info> {
+    #[account(seeds = [b"protocol_state"], bump = protocol_state.bump)]
+    pub protocol_state: Account<'info, ProtocolState>,
+    #[account(
+        init,
+        payer = authority,
+        space = 8 + GasVault::SIZE,
+        seeds = [b"gasvault"],
+        bump
+    )]
+    pub gasvault: Account<'info, GasVault>,
+    #[account(mut)]
+    pub authority: Signer<'info>,
+    pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
+pub struct DepositToGasVault<'info> {
+    #[account(seeds = [b"protocol_state"], bump = protocol_state.bump)]
+    pub protocol_state: Account<'info, ProtocolState>,
+    #[account(mut, seeds = [b"gasvault"], bump = gasvault.bump)]
+    pub gasvault: Account<'info, GasVault>,
+    #[account(mut)]
+    pub authority: Signer<'info>,
+    pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
+pub struct IssueFeeCredits<'info> {
+    #[account(seeds = [b"protocol_state"], bump = protocol_state.bump)]
+    pub protocol_state: Account<'info, ProtocolState>,
+    #[account(mut, seeds = [b"gasvault"], bump = gasvault.bump)]
+    pub gasvault: Account<'info, GasVault>,
+    pub authority: Signer<'info>,
+}
+
+#[derive(Accounts)]
+pub struct SpendFeeCredits<'info> {
+    #[account(seeds = [b"protocol_state"], bump = protocol_state.bump)]
+    pub protocol_state: Account<'info, ProtocolState>,
+    #[account(mut, seeds = [b"gasvault"], bump = gasvault.bump)]
+    pub gasvault: Account<'info, GasVault>,
+    /// CHECK: Relayer is only a pubkey reference.
+    pub relayer: AccountInfo<'info>,
+}
+
+#[derive(Accounts)]
+pub struct ReimburseRelayer<'info> {
+    #[account(seeds = [b"protocol_state"], bump = protocol_state.bump)]
+    pub protocol_state: Account<'info, ProtocolState>,
+    #[account(mut, seeds = [b"gasvault"], bump = gasvault.bump)]
+    pub gasvault: Account<'info, GasVault>,
+    #[account(mut)]
+    pub authority: Signer<'info>,
+    /// CHECK: Relayer receives lamports; no data read.
+    #[account(mut)]
+    pub relayer: AccountInfo<'info>,
+}
+
+// ------------------------------------------------------------------
+// Existing account contexts
+// ------------------------------------------------------------------
+
 #[derive(Accounts)]
 #[instruction(attestation_hash: [u8; 32], reserve_ratio_bps: u16)]
 pub struct RecordReserveAttestation<'info> {
@@ -401,6 +571,20 @@ pub enum RedemptionPolicy {
 }
 
 #[account]
+pub struct GasVault {
+    pub authority: Pubkey,
+    pub total_deposited_lamports: u64,
+    pub total_credits_issued: u64,
+    pub total_credits_spent: u64,
+    pub total_reimbursed: u64,
+    pub bump: u8,
+}
+
+impl GasVault {
+    pub const SIZE: usize = 32 + 8 + 8 + 8 + 8 + 1; // ~65 bytes
+}
+
+#[account]
 pub struct ReserveAttestation {
     pub attestation_hash: [u8; 32],
     pub reserve_ratio_bps: u16,
@@ -433,6 +617,8 @@ pub enum ErrorCode {
     Unauthorized,
     #[msg("Reserve ratio too low or invalid")]
     ReserveTooLow,
+    #[msg("GasVault has insufficient lamports")]
+    GasVaultInsufficient,
 }
 
 // ------------------------------------------------------------------
@@ -478,6 +664,13 @@ mod tests {
         let expected = 32 + 2 + 8 + 32 + 1;
         assert_eq!(ReserveAttestation::SIZE, expected);
         assert_eq!(ReserveAttestation::SIZE, 75);
+    }
+
+    #[test]
+    fn test_gasvault_size() {
+        let expected = 32 + 8 + 8 + 8 + 8 + 1;
+        assert_eq!(GasVault::SIZE, expected);
+        assert_eq!(GasVault::SIZE, 65);
     }
 
     #[test]
