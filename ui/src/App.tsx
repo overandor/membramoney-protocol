@@ -7,6 +7,7 @@ import MintNoteCard from "./components/MintNoteCard";
 import ClaimNoteCard from "./components/ClaimNoteCard";
 import ReserveStatusCard from "./components/ReserveStatusCard";
 import RiskDisclosure from "./components/RiskDisclosure";
+import FeeSavingsCard from "./components/FeeSavingsCard";
 
 const App: React.FC = () => {
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
@@ -22,7 +23,9 @@ const App: React.FC = () => {
         <DevnetBanner />
         <header className="app-header">
           <h1>Membra Money Protocol</h1>
-          <p className="subtitle">Experimental devnet-first bearer-note protocol</p>
+          <p className="subtitle">
+            BTC-denominated bearer notes · Solana speed · Near-zero fees
+          </p>
         </header>
         <main className="app-main">
           <section className="panel">
@@ -49,6 +52,9 @@ const App: React.FC = () => {
           </section>
           <section className="panel">
             <ReserveStatusCard key={refreshKey} />
+          </section>
+          <section className="panel">
+            <FeeSavingsCard amountSats={100_000} />
           </section>
         </main>
         <footer className="app-footer">

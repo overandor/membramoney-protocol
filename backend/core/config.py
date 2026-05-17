@@ -27,7 +27,12 @@ class Settings(BaseSettings):
     redis_url: str = "redis://localhost:6379/0"
 
     solana_rpc_url: str = "https://api.devnet.solana.com"
-    anchor_program_id: str = "11111111111111111111111111111111"
+    anchor_program_id: str = "EXNLzDxRPN81NtxZKzNBKweG93R9FWUq8gfGoFGzxYYw"
+    anchor_program_id_mainnet: str = ""
+
+    # Fee sponsoring (gasless transfers)
+    fee_sponsoring_enabled: bool = False
+    fee_sponsor_wallet: str = ""
 
     risk_disclosure_version: str = "v1.0.0-devnet"
     log_level: str = "info"

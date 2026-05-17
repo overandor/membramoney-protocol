@@ -804,3 +804,108 @@ button:disabled {
     padding: 10px 12px;
   }
 }
+
+/* ================================================================
+   Fee Savings Card
+   ================================================================ */
+
+.fee-savings .card-subtitle {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-bottom: 20px;
+}
+
+.fee-compare {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.fee-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+}
+
+.fee-row.fee-highlight {
+  background: rgba(81, 207, 102, 0.08);
+  border: 1px solid rgba(81, 207, 102, 0.25);
+}
+
+.fee-label { font-size: 0.88rem; color: var(--text-muted); }
+
+.fee-value { font-family: "JetBrains Mono", monospace; font-size: 0.88rem; font-weight: 600; }
+.fee-bad   { color: var(--danger); text-decoration: line-through; opacity: 0.7; }
+.fee-free  { color: var(--success); }
+
+.speed-compare {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+.speed-item {
+  flex: 1;
+  text-align: center;
+  padding: 12px;
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+}
+
+.speed-divider { color: var(--text-muted); font-size: 0.8rem; }
+
+.speed-label { font-size: 0.78rem; color: var(--text-muted); margin-bottom: 4px; }
+.speed-value { font-weight: 700; font-size: 1rem; }
+.speed-slow  { color: var(--danger); }
+.speed-fast  { color: var(--success); }
+
+.tps-row {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: center;
+  font-size: 0.82rem;
+  margin-bottom: 16px;
+}
+
+.tps-item { color: var(--text-muted); }
+
+.savings-badge {
+  background: rgba(100, 210, 255, 0.1);
+  border: 1px solid rgba(100, 210, 255, 0.2);
+  border-radius: 20px;
+  padding: 2px 12px;
+  color: var(--accent);
+}
+
+.savings-badge strong { color: var(--accent); }
+
+.innovation-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.innovation-item {
+  display: flex;
+  gap: 10px;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  align-items: flex-start;
+}
+
+.innovation-icon { color: var(--accent-2); flex-shrink: 0; margin-top: 2px; }
+
+.fee-disclaimer {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  opacity: 0.6;
+  text-align: center;
+}
