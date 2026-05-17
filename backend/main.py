@@ -25,6 +25,7 @@ from services.claim_service import ClaimService
 from services.reserve_service import ReserveService
 from services.risk_disclosure import RiskDisclosureService
 from db.adapter import db
+from api.tokenomics_routes import router as tokenomics_router
 
 # ------------------------------------------------------------------
 # Lifecycle
@@ -75,6 +76,8 @@ app.add_middleware(
 app.add_middleware(RequestIDMiddleware)
 app.add_middleware(AuditLoggingMiddleware)
 app.add_middleware(RateLimitMiddleware, rate=2.0, capacity=20, window=60)
+
+app.include_router(tokenomics_router)
 
 # ------------------------------------------------------------------
 # Request / Response Models
