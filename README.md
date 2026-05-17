@@ -191,3 +191,25 @@ membramoney-protocol/
 ## License
 
 MIT — See LICENSE for details. Use at your own risk.
+
+## Production Services
+
+The backend now includes production-grade services:
+
+- **Identity Service** — username routing, receive tags, device management
+- **Claim-Note Service** — full lifecycle (create, transfer, split, merge, burn, revoke)
+- **Ledger Service** — ACID event sourcing, idempotency, optimistic concurrency
+- **Treasury Service** — hot/warm/cold wallets, reserve attestations
+- **Settlement Engine** — batched settlement with fee estimation
+- **Redemption Service** — fraud checks, compliance, fee quotes, settlement
+- **Compliance Service** — sanctions screening, risk scoring, quarantine
+- **Security Service** — velocity tracking, anomaly detection, alerts
+- **Metrics Service** — Prometheus-style observability
+
+| Test Suite | Count | Status |
+|------------|-------|--------|
+| Backend integration | 48 | Passing |
+| Production services | 11 | Passing |
+| Rust lib tests | 40 | Passing |
+
+Run `python3 -m pytest tests/` in `backend/` and `cargo test --lib` in `programs/membramoney`.\n
