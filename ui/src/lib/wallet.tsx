@@ -1,6 +1,36 @@
-import React, { createContext, useContext, useState, useCallback, useEffect } from "react";
+/**
+ * Solana Wallet Provider — production integration via @solana/wallet-adapter-react.
+ * Supports Phantom, Solflare. Falls back gracefully when extensions are absent.
+ *
+ * Network is driven by VITE_SOLANA_NETWORK (devnet | mainnet-beta).
+ * RPC is driven by VITE_SOLANA_RPC_URL (optional custom endpoint).
+ */
 
-interface WalletContextType {
+import React, { createContext, useContext, useMemo } from "react";
+import {
+  ConnectionProvider,
+  WalletProvider as AdapterWalletProvider,
+  useWallet as useAdapterWallet,
+} from "@solana/wallet-adapter-react";
+import { WalletModalProvider } from "@solana/wallet-adapter-react-ui";
+import { PhantomWalletAdapter } from "@solana/wallet-adapter-phantom";
+import { SolflareWalletAdapter } from "@solana/wallet-adapter-solflare";
+import "@solana/wallet-adapter-react-ui/styles.css";
+
+const NETWORK: string =
+  (import.meta as any).env?.VITE_SOLANA_NETWORK || "devnet";
+
+const RPC_URL: string =
+  (import.meta as any).env?.VITE_SOLANA_RPC_URL ||
+  (NETWORK === "mainnet-beta"
+    ? "https://api.mainnet-beta.solana.com"
+    : "https://api.devnet.solana.com");
+
+// ---------------------------------------------------------------------------
+// Public context shape — identical to previous API so all components compile.
+// ---------------------------------------------------------------------------
+
+export interface WalletContextType {
   walletAddress: string | null;
   isConnected: boolean;
   isPhantomInstalled: boolean;
@@ -9,76 +39,70 @@ interface WalletContextType {
   network: string;
 }
 
-const WalletContext = createContext<WalletContextType>({
+const WalletCompatContext = createContext<WalletContextType>({
   walletAddress: null,
   isConnected: false,
   isPhantomInstalled: false,
   connect: async () => {},
   disconnect: () => {},
-  network: "devnet",
+  network: NETWORK,
 });
 
-export const useWallet = () => useContext(WalletContext);
+export const useWallet = (): WalletContextType =>
+  useContext(WalletCompatContext);
 
-/**
- * Solana Wallet Provider — currently simulates connection for devnet.
- * In production, this would integrate with @solana/wallet-adapter-react.
- */
-export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [walletAddress, setWalletAddress] = useState<string | null>(null);
-  const [isPhantomInstalled, setIsPhantomInstalled] = useState(false);
-  const network = "devnet";
+// ---------------------------------------------------------------------------
+// Bridge: reads from the real adapter and exposes the compat interface.
+// ---------------------------------------------------------------------------
 
-  useEffect(() => {
-    // Check if Phantom wallet extension is installed
-    const phantom = (window as any).solana;
-    if (phantom?.isPhantom) {
-      setIsPhantomInstalled(true);
-      // Auto-connect if previously authorized
-      if (phantom.isConnected && phantom.publicKey) {
-        setWalletAddress(phantom.publicKey.toString());
-      }
-    }
-  }, []);
+const WalletCompatBridge: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
+  const {
+    publicKey,
+    connected,
+    connect,
+    disconnect,
+  } = useAdapterWallet();
 
-  const connect = useCallback(async () => {
-    try {
-      const phantom = (window as any).solana;
-      if (phantom?.isPhantom) {
-        const response = await phantom.connect();
-        setWalletAddress(response.publicKey.toString());
-      } else {
-        // Fallback: simulate connection for devnet testing
-        const simulatedAddress = "CFvvtuX8JMia5MY4m3tkjJ6uG45Xwbm7swS7qgDXsStL";
-        setWalletAddress(simulatedAddress);
-        console.warn("Phantom wallet not detected. Using simulated devnet wallet.", simulatedAddress);
-      }
-    } catch (err) {
-      console.error("Wallet connection failed:", err);
-      throw err;
-    }
-  }, []);
-
-  const disconnect = useCallback(() => {
-    const phantom = (window as any).solana;
-    if (phantom?.isPhantom && phantom.isConnected) {
-      phantom.disconnect();
-    }
-    setWalletAddress(null);
-  }, []);
+  const isPhantomInstalled =
+    typeof window !== "undefined" && !!(window as any).phantom?.solana?.isPhantom;
 
   return (
-    <WalletContext.Provider
+    <WalletCompatContext.Provider
       value={{
-        walletAddress,
-        isConnected: !!walletAddress,
+        walletAddress: publicKey?.toString() ?? null,
+        isConnected: connected && !!publicKey,
         isPhantomInstalled,
         connect,
         disconnect,
-        network,
+        network: NETWORK,
       }}
     >
       {children}
-    </WalletContext.Provider>
+    </WalletCompatContext.Provider>
+  );
+};
+
+// ---------------------------------------------------------------------------
+// WalletProvider — wrap your app root with this.
+// ---------------------------------------------------------------------------
+
+export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
+  const adapters = useMemo(
+    () => [new PhantomWalletAdapter(), new SolflareWalletAdapter()],
+    []
+  );
+
+  return (
+    <ConnectionProvider endpoint={RPC_URL}>
+      <AdapterWalletProvider wallets={adapters} autoConnect>
+        <WalletModalProvider>
+          <WalletCompatBridge>{children}</WalletCompatBridge>
+        </WalletModalProvider>
+      </AdapterWalletProvider>
+    </ConnectionProvider>
   );
 };

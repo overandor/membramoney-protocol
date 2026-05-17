@@ -1,54 +1,32 @@
 import React from "react";
-import { connectWallet, disconnectWallet } from "../lib/solana";
+import { useWallet } from "../lib/wallet";
+import WalletConnectButton from "./WalletConnectButton";
 
-interface Props {
-  walletAddress: string | null;
-  onConnect: (addr: string) => void;
-  onDisconnect: () => void;
-}
-
-const WalletPanel: React.FC<Props> = ({ walletAddress, onConnect, onDisconnect }) => {
-  const handleConnect = async () => {
-    try {
-      const conn = await connectWallet();
-      if (conn.connected && conn.address) {
-        onConnect(conn.address);
-      }
-    } catch (e) {
-      console.error("Wallet connect error:", e);
-    }
-  };
-
-  const handleDisconnect = () => {
-    disconnectWallet();
-    onDisconnect();
-  };
+const WalletPanel: React.FC = () => {
+  const { walletAddress, isConnected, network } = useWallet();
 
   return (
     <div className="animate-in">
       <h2 className="card-title">Wallet</h2>
-      {walletAddress ? (
+      {isConnected && walletAddress ? (
         <div className="wallet-info">
           <div>
             <span className="wallet-label">Address</span>
             <div className="wallet-address">{walletAddress}</div>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <span className="wallet-badge devnet">devnet</span>
-            <button className="btn-secondary" onClick={handleDisconnect}>
-              Disconnect
-            </button>
+            <span className={`wallet-badge ${network === "mainnet-beta" ? "mainnet" : "devnet"}`}>
+              {network}
+            </span>
+            <WalletConnectButton />
           </div>
         </div>
       ) : (
         <div className="wallet-info">
-          <p style={{ color: "var(--text-muted)", marginBottom: 4 }}>
-            No wallet connected.
+          <p style={{ color: "var(--text-muted)", marginBottom: 12 }}>
+            Connect Phantom or Solflare to get started.
           </p>
-          <button onClick={handleConnect}>Connect Wallet</button>
-          <p style={{ color: "var(--text-muted)", fontSize: "0.75rem" }}>
-            Devnet placeholder — paste a test address or leave blank.
-          </p>
+          <WalletConnectButton />
         </div>
       )}
     </div>

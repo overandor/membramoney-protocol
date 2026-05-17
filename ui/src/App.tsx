@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { WalletProvider } from "./lib/wallet";
+import { WalletProvider, useWallet } from "./lib/wallet";
 import DevnetBanner from "./components/DevnetBanner";
 import ErrorBoundary from "./components/ErrorBoundary";
 import WalletPanel from "./components/WalletPanel";
@@ -9,17 +9,17 @@ import ReserveStatusCard from "./components/ReserveStatusCard";
 import RiskDisclosure from "./components/RiskDisclosure";
 import FeeSavingsCard from "./components/FeeSavingsCard";
 
-const App: React.FC = () => {
-  const [walletAddress, setWalletAddress] = useState<string | null>(null);
+// AppContent lives inside WalletProvider so it can call useWallet().
+const AppContent: React.FC = () => {
+  const { walletAddress } = useWallet();
   const [riskAccepted, setRiskAccepted] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
 
-  const handleRefresh = () => setRefreshKey((k: number) => k + 1);
+  const handleRefresh = () => setRefreshKey((k) => k + 1);
 
   return (
-    <WalletProvider>
-      <ErrorBoundary>
-        <div className="app">
+    <ErrorBoundary>
+      <div className="app">
         <DevnetBanner />
         <header className="app-header">
           <h1>Membra Money Protocol</h1>
@@ -29,11 +29,7 @@ const App: React.FC = () => {
         </header>
         <main className="app-main">
           <section className="panel">
-            <WalletPanel
-              walletAddress={walletAddress}
-              onConnect={setWalletAddress}
-              onDisconnect={() => setWalletAddress(null)}
-            />
+            <WalletPanel />
           </section>
           <section className="panel">
             <RiskDisclosure
@@ -48,7 +44,10 @@ const App: React.FC = () => {
               riskAccepted={riskAccepted}
               onMint={handleRefresh}
             />
-            <ClaimNoteCard walletAddress={walletAddress} riskAccepted={riskAccepted} />
+            <ClaimNoteCard
+              walletAddress={walletAddress}
+              riskAccepted={riskAccepted}
+            />
           </section>
           <section className="panel">
             <ReserveStatusCard key={refreshKey} />
@@ -65,9 +64,14 @@ const App: React.FC = () => {
           </p>
         </footer>
       </div>
-      </ErrorBoundary>
-    </WalletProvider>
+    </ErrorBoundary>
   );
 };
+
+const App: React.FC = () => (
+  <WalletProvider>
+    <AppContent />
+  </WalletProvider>
+);
 
 export default App;

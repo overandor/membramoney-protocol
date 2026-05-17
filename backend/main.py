@@ -634,6 +634,69 @@ async def treasury_reserves():
         "usdc": _treasury.get_reserve_total("usdc"),
     }
 
+@app.get("/api/v1/treasury/batches/pending")
+async def treasury_pending_batches():
+    """Return settlement batches awaiting multi-sig approval."""
+    return {"batches": _treasury.get_pending_batches()}
+
+@app.post("/api/v1/treasury/batches/{batch_id}/sign")
+async def treasury_sign_batch(batch_id: str, operator_id: str, signature_hex: str):
+    """Submit one operator signature toward the M-of-N threshold."""
+    try:
+        return _treasury.sign_batch(batch_id, operator_id, signature_hex)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@app.post("/api/v1/treasury/batches/{batch_id}/reject")
+async def treasury_reject_batch(batch_id: str, operator_id: str, reason: str):
+    try:
+        return _treasury.reject_batch(batch_id, operator_id, reason)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@app.post("/api/v1/treasury/operators")
+async def register_operator(operator_id: str, name: str, public_key: str):
+    return _treasury.register_operator(operator_id, name, public_key)
+
+@app.get("/api/v1/treasury/audit")
+async def treasury_audit_log(limit: int = 100):
+    return {"events": _treasury.get_audit_log(limit)}
+
+# Redemption approval queue endpoints (P6 — operational controls)
+@app.get("/api/v1/redemption/queue")
+async def redemption_approval_queue():
+    """Return redemptions pending dual-operator approval."""
+    return {"queue": _redemption.get_approval_queue()}
+
+@app.post("/api/v1/redemption/{receipt_id}/approve")
+async def approve_redemption(receipt_id: str, operator_id: str, required_approvals: int = 2):
+    try:
+        return _redemption.approve_redemption(receipt_id, operator_id, required_approvals)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@app.post("/api/v1/redemption/{receipt_id}/reject")
+async def reject_redemption(receipt_id: str, operator_id: str, reason: str):
+    try:
+        return _redemption.reject_redemption(receipt_id, operator_id, reason)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@app.get("/api/v1/redemption/{receipt_id}")
+async def get_receipt(receipt_id: str):
+    r = _redemption.get_receipt(receipt_id)
+    if not r:
+        raise HTTPException(status_code=404, detail="Receipt not found")
+    return r
+
+@app.get("/api/v1/redemption/audit/log")
+async def redemption_audit_log(receipt_id: Optional[str] = None, limit: int = 100):
+    return {"events": _redemption.get_audit_log(receipt_id, limit)}
+
+@app.get("/api/v1/redemption/quarantine/list")
+async def redemption_quarantine():
+    return {"quarantine": _redemption.get_quarantine()}
+
 # Compliance + Security endpoints
 from services.compliance_service import ComplianceService
 from services.security_service import SecurityService
