@@ -655,3 +655,17 @@ async def security_check(user_id: str, amount: int, ip_hash: str, device_fingerp
     velocity = _security.check_velocity(user_id, ip_hash)
     anomaly = _security.check_anomaly(user_id, amount, ip_hash, device_fingerprint)
     return {"velocity": velocity, "anomaly": anomaly}
+
+# Production metrics endpoint
+from metrics_service import MetricsService
+
+_prod_metrics = MetricsService()
+
+@app.get("/api/v1/metrics")
+async def production_metrics():
+    _prod_metrics.gauge("membra_users_total", len(_identity._users))
+    _prod_metrics.gauge("membra_claims_active", len([c for c in _claimnotes._claims.values() if c["state"] == "created"]))
+    _prod_metrics.gauge("membra_ledger_entries_total", len(_ledger._entries))
+    _prod_metrics.gauge("membra_settlement_batches_total", len(_settlement._batches))
+    _prod_metrics.gauge("membra_quarantine_total", len(_compliance.get_quarantine()))
+    return _prod_metrics.to_dict()
