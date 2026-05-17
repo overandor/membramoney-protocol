@@ -669,3 +669,19 @@ async def production_metrics():
     _prod_metrics.gauge("membra_settlement_batches_total", len(_settlement._batches))
     _prod_metrics.gauge("membra_quarantine_total", len(_compliance.get_quarantine()))
     return _prod_metrics.to_dict()
+
+@app.get("/health/services")
+async def health_services():
+    return {
+        "services": {
+            "identity": {"status": "ok", "users": len(_identity._users)},
+            "claimnotes": {"status": "ok", "claims": len(_claimnotes._claims)},
+            "ledger": {"status": "ok", "entries": len(_ledger._entries)},
+            "treasury": {"status": "ok", "wallets": len(_treasury._wallets)},
+            "settlement": {"status": "ok", "batches": len(_settlement._batches)},
+            "redemption": {"status": "ok"},
+            "compliance": {"status": "ok", "quarantine_count": len(_compliance.get_quarantine())},
+            "security": {"status": "ok", "alert_count": len(_security.get_alerts())},
+        },
+        "overall": "healthy",
+    }
