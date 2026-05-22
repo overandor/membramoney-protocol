@@ -25,8 +25,15 @@ from services.appraisal_service import (
 
 router = APIRouter(prefix="/api/v1/appraisal", tags=["appraisal"])
 
-_engine = AppraisalEngine()
+_engine: Optional[AppraisalEngine] = None
 _running = False   # simple guard against concurrent runs
+
+
+def _get_engine() -> AppraisalEngine:
+    global _engine
+    if _engine is None:
+        _engine = AppraisalEngine()
+    return _engine
 
 
 # ---------------------------------------------------------------------------
@@ -63,7 +70,7 @@ async def trigger_appraisal(background_tasks: BackgroundTasks):
     def _run():
         global _running
         try:
-            _engine.run()
+            _get_engine().run()
         finally:
             _running = False
 

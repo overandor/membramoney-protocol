@@ -226,10 +226,16 @@ class LLMAppraiser:
     """
 
     def __init__(self, model: str = "claude-haiku-4-5-20251001"):
-        self.client = anthropic.Anthropic()
+        self._client: Optional[anthropic.Anthropic] = None
         self.model = model
         # value_cache: content_hash -> (value_cents, rationale)
         self._value_cache: Dict[str, Tuple[int, str]] = {}
+
+    @property
+    def client(self) -> anthropic.Anthropic:
+        if self._client is None:
+            self._client = anthropic.Anthropic()
+        return self._client
 
     def _heuristic_value(self, path: Path) -> Tuple[int, str]:
         """Fast dollar estimate for binary/generated files without calling LLM."""
