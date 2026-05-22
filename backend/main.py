@@ -2,6 +2,7 @@
 Membra Money Protocol — FastAPI Backend
 """
 
+import asyncio
 import hashlib
 import hmac
 import json
@@ -26,17 +27,40 @@ from services.reserve_service import ReserveService
 from services.risk_disclosure import RiskDisclosureService
 from db.adapter import db
 from api.tokenomics_routes import router as tokenomics_router
+from api.appraisal_routes import router as appraisal_router
 
 # ------------------------------------------------------------------
 # Lifecycle
 # ------------------------------------------------------------------
 
+APPRAISAL_INTERVAL_SECONDS = int(os.getenv("APPRAISAL_INTERVAL_SECONDS", str(60 * 60)))  # default 1 hr
+
+
+async def _hourly_appraisal_loop():
+    """Background task: run a full machine appraisal every APPRAISAL_INTERVAL_SECONDS."""
+    from services.appraisal_service import AppraisalEngine
+    engine = AppraisalEngine()
+    while True:
+        try:
+            log_info("appraisal", "Starting scheduled machine appraisal")
+            snap = engine.run()
+            log_info("appraisal", f"Appraisal complete: {snap.file_count} files, "
+                     f"${snap.total_value_dollars:,.2f} total, "
+                     f"root={snap.merkle_root[:12]}…")
+        except Exception as exc:
+            log_warn("appraisal", f"Scheduled appraisal failed: {exc}")
+        await asyncio.sleep(APPRAISAL_INTERVAL_SECONDS)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup
+    task = asyncio.create_task(_hourly_appraisal_loop())
     yield
-    # Shutdown
-    pass
+    task.cancel()
+    try:
+        await task
+    except asyncio.CancelledError:
+        pass
 
 app = FastAPI(
     title="Membra Money Protocol API",
@@ -78,6 +102,7 @@ app.add_middleware(AuditLoggingMiddleware)
 app.add_middleware(RateLimitMiddleware, rate=2.0, capacity=20, window=60)
 
 app.include_router(tokenomics_router)
+app.include_router(appraisal_router)
 
 # ------------------------------------------------------------------
 # Request / Response Models
