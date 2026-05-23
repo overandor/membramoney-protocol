@@ -19,4 +19,4 @@ default = []
 anchor-lang = { version = "0.29.0", features = ["init-if-needed"] }
 anchor-spl = "0.29.0"
 # Pin solana-program to avoid borsh v1.6.1 -> borsh-derive -> proc-macro-crate -> toml_parser edition 2024 chain
-solana-program = "=1.16.27"
+solana-program = "=4.0.0"
