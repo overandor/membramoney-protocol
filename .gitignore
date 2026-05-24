@@ -84,3 +84,4 @@ test-ledger/
 # Misc
 *.tar.gz
 *.zip
+backend/filelife.db
