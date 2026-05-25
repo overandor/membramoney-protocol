@@ -145,6 +145,62 @@ export interface SponsorStatusResponse {
   devnet: boolean;
 }
 
+export interface TransferResponse {
+  success: boolean;
+  claim_id: string;
+  message?: string;
+}
+
+export interface SplitResponse {
+  success: boolean;
+  new_claim_ids: string[];
+  message?: string;
+}
+
+export interface RedeemResponse {
+  success: boolean;
+  receipt_id?: string;
+  message?: string;
+}
+
+export interface TreasuryReservesResponse {
+  btc?: number;
+  sol?: number;
+  eth?: number;
+  usdc?: number;
+  updated_at?: string;
+  [key: string]: unknown;
+}
+
+export interface PendingBatch {
+  batch_id: string;
+  created_at: string;
+  amount?: number;
+  status: string;
+  [key: string]: unknown;
+}
+
+export interface PendingBatchesResponse {
+  batches: PendingBatch[];
+  count: number;
+}
+
+export interface ComplianceScreenResponse {
+  user_id: string;
+  screening_type: string;
+  result: string;
+  flagged: boolean;
+  details?: Record<string, unknown>;
+}
+
+export interface SecurityCheckResponse {
+  user_id: string;
+  anomaly_detected: boolean;
+  velocity_exceeded: boolean;
+  risk_score?: number;
+  details?: Record<string, unknown>;
+}
+
 export const api = {
   health: () => fetchJson<HealthResponse>("/health"),
   ready: () => fetchJson<HealthResponse>("/ready"),
@@ -171,4 +227,47 @@ export const api = {
   getFeeSavings: (amountSats?: number) =>
     fetchJson<FeeSavingsResponse>(`/api/v1/fees/savings?amount_sats=${amountSats || 100000}`),
   getSponsorStatus: () => fetchJson<SponsorStatusResponse>("/api/v1/sponsor/status"),
+
+  // Transfer, Split, Redeem
+  transferClaim: (claimId: string, body: { from_user: string; to_user: string }) =>
+    fetchJson<TransferResponse>(`/api/v1/claims/${claimId}/transfer`, {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+  splitClaim: (claimId: string, body: { amounts: number[] }) =>
+    fetchJson<SplitResponse>(`/api/v1/claims/${claimId}/split`, {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+  redeemClaim: (claimId: string, body: { user_id: string; pin: string; destination: string; chain: string }) =>
+    fetchJson<RedeemResponse>(`/api/v1/claims/${claimId}/redeem`, {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+
+  // Treasury
+  getTreasuryReserves: () => fetchJson<TreasuryReservesResponse>("/api/v1/treasury/reserves"),
+  getPendingBatches: () => fetchJson<PendingBatchesResponse>("/api/v1/treasury/batches/pending"),
+  signBatch: (batchId: string, body: { operator_id: string; signature_hex: string }) =>
+    fetchJson<{ success: boolean }>(`/api/v1/treasury/batches/${batchId}/sign`, {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+  rejectBatch: (batchId: string, body: { operator_id: string; reason: string }) =>
+    fetchJson<{ success: boolean }>(`/api/v1/treasury/batches/${batchId}/reject`, {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+
+  // Compliance & Security
+  screenCompliance: (body: { user_id: string; screening_type: string }) =>
+    fetchJson<ComplianceScreenResponse>("/api/v1/compliance/screen", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+  securityCheck: (body: { user_id: string; amount: number; ip_hash: string; device_fingerprint: string }) =>
+    fetchJson<SecurityCheckResponse>("/api/v1/security/check", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
 };
