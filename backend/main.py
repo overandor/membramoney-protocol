@@ -28,6 +28,7 @@ from services.risk_disclosure import RiskDisclosureService
 from db.adapter import db
 from api.tokenomics_routes import router as tokenomics_router
 from api.appraisal_routes import router as appraisal_router
+from filelife.routes import router as filelife_router
 
 # ------------------------------------------------------------------
 # Lifecycle
@@ -103,6 +104,7 @@ app.add_middleware(RateLimitMiddleware, rate=2.0, capacity=20, window=60)
 
 app.include_router(tokenomics_router)
 app.include_router(appraisal_router)
+app.include_router(filelife_router)
 
 # ------------------------------------------------------------------
 # Request / Response Models
