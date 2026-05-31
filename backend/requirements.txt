@@ -13,7 +13,7 @@ python-multipart==0.0.9
 
 # Security
 bcrypt==4.1.0
-pyjwt==2.12.1
+pyjwt==2.13.0
 
 # Redis (optional, for brute-force tracking)
 redis==7.4.0
